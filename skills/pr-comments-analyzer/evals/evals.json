@@ -1,0 +1,23 @@
+{
+  "skill_name": "pr-comments-analyzer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Analyze PR comments for PR #123 in my repo. There are several review comments and I need help understanding what to prioritize.",
+      "expected_output": "A structured analysis of all PR comments with individual assessments (feasibility, effort, impact, priority) and a comprehensive summary with statistics and implementation phases.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I'm working on PR 456 and have gotten a lot of feedback. Can you analyze the comments and tell me which ones I should actually address versus which ones I can push back on?",
+      "expected_output": "A detailed analysis categorizing comments into HIGH/MEDIUM/LOW priority recommendations, with specific reasoning for each comment and an implementation plan.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Review the PR comments on my current branch and give me a prioritized list of action items.",
+      "expected_output": "A comprehensive summary report with statistics on comments, prioritized recommendations by effort and impact, and a phased implementation plan.",
+      "files": []
+    }
+  ]
+}
