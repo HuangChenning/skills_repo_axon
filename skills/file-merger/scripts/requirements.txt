@@ -1,0 +1,13 @@
+# File Merger 依赖
+
+# 核心依赖
+pypdf2>=3.0.0
+python-docx>=1.0.0
+chardet>=5.0.0
+
+# 扩展功能依赖
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# 可选：EPUB 处理
+# ebooklib>=0.18

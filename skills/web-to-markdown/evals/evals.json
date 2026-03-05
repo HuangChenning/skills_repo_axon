@@ -1,0 +1,23 @@
+{
+  "skill_name": "web-to-markdown",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "请将 https://example.com 的网页内容转换为 Markdown 格式",
+      "expected_output": "在项目根目录下生成 markdown_output 目录，包含转换后的 Markdown 文件",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "使用 YAML 配置文件批量爬取 Oracle 11g 相关文章",
+      "expected_output": "读取配置文件，批量爬取网页并转换为 Markdown 格式，保存到指定目录",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "爬取 https://docs.python.org/3/tutorial/ 下的所有 Python 教程页面，深度为 1，只爬取同域名",
+      "expected_output": "使用深度爬取功能，爬取所有相关页面并转换为 Markdown 格式",
+      "files": []
+    }
+  ]
+}

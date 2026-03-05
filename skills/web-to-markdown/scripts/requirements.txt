@@ -1,0 +1,6 @@
+# 网页转 Markdown 依赖
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+markdownify>=0.11.6
+pyyaml>=6.0

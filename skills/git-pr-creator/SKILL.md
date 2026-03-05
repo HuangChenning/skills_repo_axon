@@ -102,7 +102,8 @@ git show <commit>:<file>
 - [ ] Tests added/updated (if applicable)
 
 ## Related Issues
-[Reference any related GitHub issues with #issue_number]
+[使用关闭关键字引用 Issue，见下方说明]
+Closes #123
 
 ## Commits
 [List of commits included:]
@@ -163,6 +164,58 @@ git show <commit>:<file>
 
 5. Return to user for review and approval
 
+## Issue 关联
+
+### 关闭 Issue 的关键字
+
+在 PR 描述中使用特定关键字，合并后可自动关闭 Issue：
+
+| 关键字 | 效果 | 示例 |
+|:---|:---|:---|
+| `Closes` | PR 合并后自动关闭 Issue | `Closes #123` |
+| `Fixes` | 同上 | `Fixes #123` |
+| `Resolves` | 同上 | `Resolves #123` |
+| `Refs` | 仅引用，不关闭 Issue | `Refs #123` |
+| `Related to` | 仅引用，不关闭 Issue | `Related to #123` |
+
+**⚠️ 注意**：仅在 PR 描述中使用 `Issue #123` 或 `#123` 不会自动关闭 Issue！
+
+### 从分支名解析 Issue
+
+如果分支名包含 Issue 编号，自动提取并关联：
+
+**常见分支命名格式：**
+- `issue-123-fix-bug` → Issue #123
+- `fix/123-login-error` → Issue #123
+- `feat-456-add-export` → Issue #456
+
+**检测命令：**
+```bash
+# 从分支名提取 Issue 编号
+git branch --show-current | grep -oE '[0-9]+'
+```
+
+**工作流：**
+1. 检测当前分支名
+2. 如果包含 `issue-XXX` 或 `XXX` 数字格式，提取 Issue 编号
+3. 在 PR 描述的 "Related Issues" 部分自动添加 `Closes #XXX`
+
+### PR 描述中的 Issue 关联示例
+
+```markdown
+## Related Issues
+Closes #123
+```
+
+或多个 Issue：
+
+```markdown
+## Related Issues
+Closes #123
+Closes #456
+Refs #789
+```
+
 ## Important Notes
 
 - **Does NOT create PR automatically** - Only generates content
@@ -172,6 +225,7 @@ git show <commit>:<file>
 - **Shows commit context** - Displays commits included for transparency
 - **Lists changed files** - Shows all modified/added/deleted files
 - **Markdown formatted** - Returns properly formatted PR description ready for GitHub
+- **Auto-detects Issue numbers** - Extracts Issue numbers from branch names when available
 
 ## Technical Details
 

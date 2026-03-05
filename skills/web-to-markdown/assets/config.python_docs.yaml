@@ -1,0 +1,24 @@
+# Python 文档爬取配置
+
+output_dir: "python_docs"
+max_workers: 6
+timeout: 30
+
+url: "https://docs.python.org/3/tutorial/"
+
+scope:
+  allow_domains:
+    - "docs.python.org"
+  deny_paths:
+    - "/3/api/"
+    - "/3/reference/"
+    - "/3/glossary/"
+
+crawl:
+  depth: 1
+  same_domain: true
+  delay: 1
+
+filter:
+  enable_similar: true
+  similarity_threshold: 0.95

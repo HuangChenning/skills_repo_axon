@@ -130,3 +130,80 @@ Use these standard labels when applicable:
 - Ask for missing critical information rather than guessing
 - Link related issues when known: `Related to #123`
 - For updates, fetch current issue first to preserve unchanged fields
+
+## Issue 后续工作流
+
+创建 Issue 后，建议遵循以下工作流以实现 Issue → Commit → PR 的自动关联：
+
+### 1. 创建关联分支
+
+**推荐分支命名格式：**
+
+| 格式 | 示例 | 说明 |
+|:---|:---|:---|
+| `issue-<number>-<action>` | `issue-123-fix-login` | 清晰关联 Issue #123 |
+| `fix/<number>-<description>` | `fix/123-timeout-error` | 类型前缀格式 |
+| `feat/<number>-<feature>` | `feat/456-user-export` | 功能分支格式 |
+
+**使用 GitHub CLI 自动创建分支：**
+
+```bash
+# 自动从 Issue 创建分支并 checkout
+gh issue develop 123 --checkout
+
+# 自动生成分支名: issue-123-fix-bug
+# 自动添加到本地: git checkout -b issue-123-fix-bug
+```
+
+### 2. 开发并提交（使用关闭关键字）
+
+在 Commit 消息中使用关闭关键字：
+
+```bash
+git commit -m "fix: resolve login timeout error
+
+Closes #123"
+```
+
+**支持的关闭关键字：**
+- `Closes #123` - 合并后自动关闭 Issue
+- `Fixes #123` - 同上
+- `Resolves #123` - 同上
+
+**仅引用（不关闭）的关键字：**
+- `Refs #123` - 仅引用，不关闭
+- `Related to #123` - 仅引用，不关闭
+
+### 3. 创建 PR（自动关联）
+
+```bash
+# 创建 PR，会自动关联 Issue（如果分支名包含 Issue 编号或 Commit 中有关闭关键字）
+gh pr create --fill
+```
+
+### 完整工作流示例
+
+```bash
+# 1. 创建 Issue
+gh issue create --title "Fix: Login timeout error" --body "..."
+# 输出: Issue #123 created
+
+# 2. 创建关联分支
+git checkout -b issue-123-fix-timeout
+# 或使用: gh issue develop 123 --checkout
+
+# 3. 开发并提交
+git add .
+git commit -m "fix: resolve login timeout error
+
+- Increase timeout to 30 seconds
+- Add retry logic
+
+Closes #123"
+
+# 4. 推送并创建 PR
+git push -u origin issue-123-fix-timeout
+gh pr create --fill
+```
+
+**结果：** PR 合并后，Issue #123 会自动关闭！
