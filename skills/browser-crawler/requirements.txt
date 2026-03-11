@@ -1,6 +1,0 @@
-# Browser Crawler 依赖
-playwright>=1.40.0
-
-# 可选：使用 Selenium
-# selenium>=4.15.0
-# selenium-wire>=5.1.0
