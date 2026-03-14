@@ -1,6 +1,6 @@
 ---
 name: git-release
-description: Create consistent releases and changelogs
+description: Create consistent releases and changelogs from merged PRs. Use this skill when preparing a release, cutting a new version, drafting release notes, or running gh release create. Triggers on "create release", "release notes", "version bump", "changelog for release", "tag release", or when the user is a maintainer preparing a GitHub release.
 license: MIT
 compatibility: opencode
 metadata:
@@ -83,6 +83,10 @@ I will output a copy-pasteable `gh` command (and optional helper commands) based
 - Release title (example: `v1.5.0`)
 - Release notes markdown
 - Copy-pasteable commands
+
+## Information Output (Required)
+
+Always surface to the user: (1) proposed version tag and title, (2) the release notes (or a clear summary/link), (3) the copy-pasteable `gh` command(s). If required info is missing (e.g. no tags found, versioning scheme unclear), report that explicitly and state what you need from the user (e.g. "No version tags found; please provide the current version or confirm this is the first release."). Do not output commands without the accompanying notes and version.
 
 ## Command templates
 

@@ -1,6 +1,6 @@
 ---
 name: git-commit-message
-description: Intelligent git commit message workflow that analyzes staged changes and generates structured commit messages following conventional commit format. Use when user needs to create a git commit message, asks about commit message format, or wants to generate commit messages from staged changes.
+description: Intelligent git commit message workflow that analyzes staged changes and generates structured commit messages following conventional commit format. Use this skill whenever the user needs a commit message, has staged changes to describe, asks about commit format or conventional commits, or mentions "commit message". Part of the open-source contribution flow with git-upstream-sync, git-pr-creator, and git-pr-cleanup.
 ---
 
 # Git Commit Message
@@ -196,6 +196,12 @@ Resolves #789
 | `#123` | 不会自动关闭 Issue | `Fixes #123` |
 | `for issue #123` | 不会自动关闭 Issue | `Resolves #123` |
 
+## Information Output (Required)
+
+- **Before the message**: Briefly report what was analyzed (e.g. files changed, suggested type/scope) so the user can confirm context.
+- **Success**: Output ONLY the complete commit message; no extra explanation or metadata around it.
+- **No staged changes or git error**: Do not output a message. Report that `git diff --cached` is empty or the command failed, and suggest running `git add` or checking the repo state.
+
 ## Output Format
 
 Output ONLY the complete commit message without any additional text, explanations, or metadata.
@@ -217,3 +223,13 @@ Here is the commit message:
 feat(cli): add profile filtering and sorting
 ...
 ```
+
+## Test cases (eval prompts)
+
+以下为 2～3 条可转为 evals 的测试场景说明，仅作文档；实际评测时可填入 `evals/evals.json` 并运行 skill-creator 流程。
+
+| ID | Prompt（用户原话） | Expected output / 验收要点 |
+|----|-------------------|----------------------------|
+| 1 | "我刚改了 `src/auth/login.ts`，加了 JWT 校验，帮我写个 commit message。" | 输出符合 `type(scope): subject`（如 `feat(auth): add JWT validation in login`）；可带简短 body；**仅**输出 commit message，无前后解释。 |
+| 2 | "我 stage 了 README 和两个文档文件，就改了点错别字和格式，写一句 commit。" | 输出为 `docs` 类型，subject 简明（如 `docs: fix typos and formatting`）；可为单行无 body。 |
+| 3 | "帮我生成 commit message"（且 `git diff --cached` 为空） | **不**输出 commit message；明确说明暂无暂存变更，并建议先 `git add` 或检查仓库状态。 |

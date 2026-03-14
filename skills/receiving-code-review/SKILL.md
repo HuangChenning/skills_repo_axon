@@ -1,6 +1,6 @@
 ---
 name: receiving-code-review
-description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
+description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable. Use this skill when responding to PR review comments, inline feedback on GitHub, or any code review. Requires technical rigor and verification, not performative agreement or blind implementation. Pairs with pr-comments-analyzer when addressing PR comments.
 ---
 
 # Code Review Reception
@@ -36,6 +36,10 @@ WHEN receiving code review feedback:
 - Ask clarifying questions
 - Push back with technical reasoning if wrong
 - Just start working (actions > words)
+
+## Information Output (Required)
+
+When handling feedback, always surface to the user (or reviewer): (1) your restatement of each point in your own words, (2) verification result (e.g. "Checked `src/auth.ts` L42; current behavior is …"), (3) your response—acknowledgment, clarifying question, or reasoned pushback—and (4) if implementing, a short plan or the change made. If something is unclear, output the exact clarifying question before implementing. Never respond with only performative agreement (e.g. "Good point!") without technical content.
 
 ## Handling Unclear Feedback
 
@@ -211,3 +215,8 @@ When replying to inline review comments on GitHub, reply in the comment thread (
 Verify. Question. Then implement.
 
 No performative agreement. Technical rigor always.
+
+## Integration with Other Skills
+
+- **pr-comments-analyzer**: Use that skill first for structured analysis and prioritization of PR comments; use this skill when implementing or responding to each item.
+- **GitHub/PR flow**: Part of the open-source contribution flow (see git-upstream-sync, git-pr-creator, git-pr-cleanup for the full pipeline).

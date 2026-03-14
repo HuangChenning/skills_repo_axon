@@ -160,3 +160,13 @@ After analyzing all comments, generate a structured summary:
 ## Output Format
 
 Always present the analysis in the structured format shown above. Start with individual comment analysis, then provide the comprehensive summary with implementation phases.
+
+## Information Output (Required)
+
+- **Success**: Always output the full structured analysis (per-comment analysis + summary with priorities + implementation phases). Do not summarize away the recommended changes or priorities.
+- **Failure**: If the PR cannot be identified or comments cannot be fetched (e.g. missing PR number, API error, not in a repo), report the error clearly and state what the user should provide (e.g. PR number, repo context, or `gh pr checkout`).
+
+## Integration with Other Skills
+
+- **receiving-code-review**: After producing recommendations, use that skill when implementing or replying to review comments (verify before implementing, respond in thread).
+- **GitHub/PR flow**: Part of the open-source contribution flow (Review phase); see [../references/open-source-workflow.md](../references/open-source-workflow.md) when used with git-upstream-sync, git-pr-creator, git-pr-cleanup.

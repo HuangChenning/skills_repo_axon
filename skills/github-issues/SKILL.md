@@ -1,6 +1,6 @@
 ---
 name: github-issues
-description: 'Create, update, and manage GitHub issues using MCP tools. Use this skill when users want to create bug reports, feature requests, or task issues, update existing issues, add labels/assignees/milestones, or manage issue workflows. Triggers on requests like "create an issue", "file a bug", "request a feature", "update issue X", or any GitHub issue management task.'
+description: 'Create, update, and manage GitHub issues using MCP tools. Use this skill when users want to create bug reports, feature requests, or task issues, update existing issues, add labels/assignees/milestones, or manage issue workflows. Triggers on "create an issue", "file a bug", "request a feature", "update issue X", or any GitHub issue management task. For issue-driven contribution, pair with git-upstream-sync (e.g. branch name issue-123-xxx) and git-commit-message (Closes #123).'
 ---
 
 # GitHub Issues
@@ -25,6 +25,13 @@ Manage GitHub issues using the `github` MCP server.
 3. **Structure content**: Use appropriate template from [references/templates.md](references/templates.md)
 4. **Execute**: Call the appropriate MCP tool
 5. **Confirm**: Report the issue URL to user
+
+## Information Output (Required)
+
+- **After create**: Always report the issue URL and, briefly, title and state (e.g. "Issue #123 created: [Bug] Login page crashes with SSO").
+- **After update**: Report the issue URL and what was changed (e.g. "Issue #123 updated: state → closed, labels added").
+- **After query/list**: Report the issue(s) and key fields the user asked for.
+- **On failure**: If the MCP call fails or required params are missing, report the error and suggest checking owner/repo or creating the issue manually via `gh issue create` or the GitHub UI.
 
 ## Creating Issues
 
