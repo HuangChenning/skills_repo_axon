@@ -48,6 +48,8 @@ git push -u origin <当前分支名>
 2. **先 commit**：在本地执行 `git add` 与 `git commit`。commit message 可写为针对审查意见的修复，例如：`address review: centralize git version in gitutil, downgrade doctor git check to warning`。
 3. **再 push**：将分支 push 到远程，即可更新该 PR，**无需新建 PR**。
 
+**默认 commit + 普通 push**：更新 PR 时默认用新 commit + 普通 push。仅特殊情况才使用 `git commit --amend --no-edit`；若需执行 `git push --force`，**必须先征得用户同意**，不得自行执行 force push。
+
 ## Workflow
 
 ### Step 1: Detect Current Branch and Target Branch
