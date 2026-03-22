@@ -38,6 +38,9 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
 - **Character Encoding (Python)**:
   - Never hardcode `decode('utf-8')` for subprocess output. Use `decode(sys.stdout.encoding or 'utf-8', errors='replace')` to handle system locale differences gracefully.
   - This prevents `UnicodeDecodeError` when SQL clients or system commands output non-UTF-8 characters.
+  - **Better**: Use `subprocess.run()` with `encoding='utf-8'` and `errors='replace'` parameters to handle decoding automatically.
+  - Example: `subprocess.run(cmd, capture_output=True, encoding='utf-8', errors='replace')` returns string output directly.
+  - This eliminates manual `.encode()` and `.decode()` calls, making code cleaner and more robust.
 - **Pythonic Code Style**:
   - Use `any()` with generator expressions instead of nested loops for pattern matching.
   - Example: `if not any(pattern in line for pattern in skip_patterns):` is preferred over nested for-loop with boolean flag.
@@ -67,6 +70,11 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Identify and refactor duplicated logic patterns (e.g., subprocess execution with timeout handling).
   - Extract shared functionality into reusable helper functions.
   - Look for similar try-except blocks, timing code, and error handling patterns.
+- **Function Length and Complexity**:
+  - Keep functions focused and under 50-100 lines when possible.
+  - If a function handles multiple distinct cases (e.g., FRA, ASM, OS storage types), consider extracting each case into a separate helper function.
+  - Example: Instead of `if storage_type == "FRA": ... elif storage_type == "ASM": ...` in main function, create `_get_fra_space()`, `_get_asm_space()` helpers.
+  - Benefits: Improved readability, easier testing, better separation of concerns.
 - **Test Data Consistency**:
   - Test fixture data should be logically consistent with real-world calculations.
   - Example: If `used=88.5` and `total=100.0`, then `pct_used` should be `88.5`, not `83.2`.
