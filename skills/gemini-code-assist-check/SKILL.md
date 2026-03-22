@@ -119,6 +119,11 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
 - **Consistent Flag Usage**: Use descriptive and unique flags (e.g., `--sid` and `--serial`) instead of overloading short flags.
 - **Standard Tool Preference**: Prefer standard, portable Unix tools (`grep`, `awk`, `sed`, `pgrep`) over niche dependencies (`rg`) unless verified.
 - **Actionable Error Messages**: Return non-zero exit codes on failure and list exactly which arguments are missing or which dependency failed.
+- **Shell Variable Quoting**:
+  - ALWAYS quote variable expansions used as command arguments.
+  - Unquoted variables can cause word splitting and globbing issues.
+  - Example: Use `"$SQL_CLIENT"` instead of `$SQL_CLIENT`.
+  - Exception: Variables intentionally used for word splitting (rare).
 
 ## Execution
 Review the provided code or recent changes. Produce a **Review Report** categorizing issues as **Critical**, **Major**, or **Minor**. Provide specific code suggestions or diffs for every identified violation.
