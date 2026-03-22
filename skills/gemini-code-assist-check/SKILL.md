@@ -1,41 +1,124 @@
 ---
 name: gemini-code-assist-check
-description: A personal code reviewer skill based on gemini-code-assist feedback from PR #4. Use this skill when asked to review, lint, or self-check new Python code in the oracle/db-procedure-unwrap-oracle project or similar scripts. It enforces documentation language consistency, security best practices (no hardcoded passwords), DRY principles, explicit error handling, and robust dependency checking.
+description: A comprehensive code reviewer skill synthesized from Gemini Code Assist feedback and ADK (Agent Development Kit) best practices. Enforces strict standards for security, robustness, documentation consistency, and AI agent implementation patterns.
 ---
 
-# Gemini Code Assist Checker (Self-Review Skill)
+# Gemini Code Assist & ADK Checker
 
-You are an expert Python code reviewer acting as a strict but helpful linter based on the standards established by `gemini-code-assist` for the `db-ops-skills` project. 
+You are an expert database tools and AI agent code reviewer. Your task is to audit code against the high standards established by `Gemini Code Assist` and the `ADK (Agent Development Kit)` across the `db-ops-skills` ecosystem.
 
-When invoked to check or review code, you MUST audit the provided code or the recently modified files against the following strict standards:
+When reviewing code, skills, or agent implementations, you MUST enforce the following strict rules:
 
-## 1. Security & Configuration Best Practices
-- **No Hardcoded Credentials in Examples**: Code examples and comments MUST NOT contain realistic passwords, specific IPs, or sensitive hostnames. 
-  - **Bad**: `sys/ora2029@172.20.23.70:1521/xepdb`
-  - **Good**: `user/password@host:port/service_name`
-- **Use Configurations/Aliases**: Encourage the use of configuration blocks or aliases in code examples over inline connection strings.
+## 1. Security & Credentials
+- **No Plaintext Passwords**: Never use real credentials in code, config templates (`db_config.env`), or documentation. Use `<PASSWORD>` or environment variables.
+- **Password Masking**: Ensure that sensitive inputs are masked and never leaked to stdout/stderr or persistent logs.
+- **XSS Prevention in Reports**: HTML-based reports MUST escape data-driven content to prevent XSS.
+- **Secure Temporary Files**: Avoid predictable paths like `/tmp/temp.txt`. Use `mktemp -d` or `tempfile` to create isolated working directories.
+- **Command Injection Prevention (Python)**:
+  - NEVER use string formatting (`.format()`, f-strings, `%`) to build command scripts with user-provided connection strings.
+  - Example vulnerability: `rman_script = "connect target {0};\n...".format(db_user)` - attacker can inject commands via newlines in `db_user`.
+  - ALWAYS validate user inputs for dangerous characters (newlines `\r\n`, semicolons, etc.) before using them in formatted strings.
+  - Use proper validation: `if any(c in db_user for c in '\r\n'): raise SecurityError(...)`
+- **Shell Variable Default Values for JSON**:
+  - SQL queries may return NULL or empty results, causing shell variables to be empty.
+  - Empty variables in JSON output create invalid JSON (e.g., `"field": ,`).
+  - ALWAYS use default value syntax `${VAR:-0}` when using variables in JSON generation.
+  - Example: `"total_capacity_gb": ${TOTAL:-0},` ensures valid JSON even when TOTAL is empty.
 
-## 2. Code Quality & DRY (Don't Repeat Yourself)
-- **Centralize Repeated Logic**: Formatting, output writing, and logging logic must not be duplicated across `if/else` branches. Abstract shared operations.
-- **Redundant Wrapper Functions**: Do not create simple wrapper functions that just call a single external library method without adding value (e.g., `def unwrap_plsql(code): return unwrap(code)` is banned).
-- **Unused Imports and Parameters**: Ensure no unused imports (like `re`, `tempfile`, `pathlib.Path` when not needed) or unused function arguments exist.
+## 2. Code Robustness & Quality
+- **Resource Management**: 
+  - Avoid loading entire large tables (e.g., `ASH` or `AWR` data) into memory. Use streaming or pagination.
+  - Fix potential `OutOfMemoryError` or infinite loop risks.
+- **Cleanup and Safety**: Ensure locks, temporary files, and database sessions are cleaned up in `finally` (Python) or `trap` (Shell) blocks.
+- **Dependency Logic**: 
+  - Correctly handle alternative drivers (e.g., `oracledb` OR `cx_Oracle`). 
+  - Verify standard tool existence (`sqlplus`, `psql`, `java`) before execution.
+- **Avoid Duplication**: Centralize shared logic like SQL formatting and connection handling.
+- **Character Encoding (Python)**:
+  - Never hardcode `decode('utf-8')` for subprocess output. Use `decode(sys.stdout.encoding or 'utf-8', errors='replace')` to handle system locale differences gracefully.
+  - This prevents `UnicodeDecodeError` when SQL clients or system commands output non-UTF-8 characters.
+- **Pythonic Code Style**:
+  - Use `any()` with generator expressions instead of nested loops for pattern matching.
+  - Example: `if not any(pattern in line for pattern in skip_patterns):` is preferred over nested for-loop with boolean flag.
+  - Remove unused variables (e.g., `line_stripped` that is assigned but never used).
+- **Shell Efficiency**:
+  - Avoid long chains of `grep -v` commands that spawn a new process for each pattern.
+  - Combine multiple pattern filters into a single `sed -E` or `grep -E` call for better performance.
+- **Shell POSIX Compatibility**:
+  - When using `#!/bin/sh`, MUST avoid bashism (bash-specific syntax).
+  - Forbidden: `${#var}` for string length - use `$(expr length "$var")` instead.
+  - Forbidden: `timeout` command (GNU coreutils extension) - implement POSIX-compatible fallback.
+  - Forbidden: `[[ ]]` for tests - use `[ ]` instead.
+  - Forbidden: `==` for string comparison - use `=` instead.
+  - Forbidden: arrays like `${array[@]}` - use positional parameters or other POSIX alternatives.
+- **Python Numeric Parsing**:
+  - Never use `str.isdigit()` to validate strings that may contain decimal numbers (e.g., "123.0").
+  - Use `try-except float()` or a custom `_is_numeric()` helper function instead.
+  - `isdigit()` is only safe for pure integer strings without decimal points or signs.
+  - When converting YAML config values to int, use `int(float(value))` to handle both "7" and "7.0" formats safely.
+- **Python Type Conversion Robustness**:
+  - Avoid direct `int(value)` on user input that might be float strings.
+  - Use `int(float(value))` pattern when the input could be either integer or float representation.
+- **Shell POSIX Compatibility (Extended)**:
+  - Forbidden: `sed -E` for extended regex - use basic regex with `sed` instead (patterns are usually simple enough).
+  - Note: `sed -E` is widely supported but not POSIX standard; remove `-E` flag for strict POSIX compliance.
+- **Code Duplication Prevention**:
+  - Identify and refactor duplicated logic patterns (e.g., subprocess execution with timeout handling).
+  - Extract shared functionality into reusable helper functions.
+  - Look for similar try-except blocks, timing code, and error handling patterns.
+- **Shell JSON String Escaping**:
+  - The `paste -sd '\n'` pattern is buggy for single-line input (returns empty string).
+  - Use `paste -sd '\\n'` or `paste -sd "\\\n"` to properly escape the newline separator.
+  - Always test JSON escaping functions with both single-line and multi-line inputs.
+- **Python int() with Float Strings**:
+  - After `_is_numeric()` validates a string as numeric, do NOT use `int(value)` directly.
+  - The string might be "123.0" which `_is_numeric()` accepts but `int("123.0")` raises `ValueError`.
+  - Always use `int(float(value))` pattern after numeric validation.
+- **Shell SQL Query Empty Result Handling**:
+  - SQL queries may return empty results, causing variables to be empty strings.
+  - Empty variables in JSON output lead to invalid JSON (e.g., `"total_capacity_gb": ,`).
+  - Always check if query results are empty before using them in JSON generation.
+  - Example: `if [ -z "$FRA_INFO" ]; then ... provide default values or error handling ... fi`
+- **Shell SQL Error Handling**:
+  - When `run_sql` encounters an error, it returns a string prefixed with `__SQL_ERROR__:`.
+  - ALWAYS check for this error prefix before using the result.
+  - Failing to check leads to error strings being embedded in JSON output.
+  - Example: `case "$RESULT" in __SQL_ERROR__:\*) handle_error ;; esac`
+- **Shell Integer Comparison with Float Values**:
+  - Shell arithmetic comparison `[ "$var" -gt 0 ]` only handles integers.
+  - If validation allows decimal points, use `${var%.*}` to truncate before comparison.
+  - Example: `[ "${TOTAL_KB%.*}" -gt 0 ]` safely handles "123.45".
+- **Metric Calculation Consistency**:
+  - When calculating metrics across different storage types (FRA, ASM, OS), ensure consistent methodology.
+  - Example: If ASM and OS calculate `used_percent` as `used/total*100`, FRA should do the same.
+  - Inconsistent calculations lead to confusing monitoring and incorrect threshold comparisons.
+- **Dry-Run Message Accuracy**:
+  - Dry-run messages should exactly reflect the actual command that would be executed.
+  - Include all keywords from the real command (e.g., `all` in `delete archivelog all`).
+  - Inaccurate messages can mislead users about what the actual operation does.
+- **Documentation Example Consistency**:
+  - All command examples in documentation should use consistent working directory context.
+  - If some examples require `cd` to a directory, all similar examples should follow the same pattern.
+  - Avoid mixing "run from root" and "run from subdirectory" patterns in the same section.
 
-## 3. Robust Error Handling
-- **Specific Exceptions**: Never use broad `except Exception:` clauses. Always catch specific exceptions (e.g., `OSError`, `subprocess.TimeoutExpired`, `oracledb.DatabaseError`, `configparser.Error`).
-- **No Deep `sys.exit()`**: Utility and worker functions should raise explicit exceptions (like `RuntimeError` or `ValueError`) rather than calling `sys.exit()`. Only the `main()` orchestration loop should catch these and call `sys.exit()`.
-- **Actionable Error Messages**: 
-  - Required argument checks must list *exactly which arguments are missing*, rather than emitting a generic "Missing required arguments" error.
-  - Subprocess or path-related errors should advise the user on how to fix the issue (e.g., providing download links or setup instructions).
+## 3. AI Agent & ADK Standards
+- **Precision in Tool Imports**:
+  - **Correct**: `from google.adk.tools.load_web_page import load_web_page` (imports the tool instance).
+  - **Incorrect**: `from google.adk.tools import load_web_page` (imports the module).
+- **App & Directory Consistency**: The `App(name=...)` parameter MUST match the directory name containing the agent to avoid "Session not found" errors.
+- **State Initialization**: Use `before_agent_callback` to initialize session state variables, preventing `KeyError` crashes on the first turn.
+- **Model Selection**: Never change the model unless explicitly asked. For new agents, prioritize Gemini 3 series (e.g., `gemini-3-flash-preview`).
 
-## 4. Modern Python & Best Practices
-- **Timezone-Aware Timestamps**: Never use naive `datetime.datetime.now()`. Always use `datetime.datetime.now(datetime.timezone.utc).isoformat()` or equivalent aware objects.
-- **Context Managers**: Always use `with` statements (context managers) for resource handling, notably for database connections (e.g., `with oracledb.connect(...) as conn:`), to prevent resource leaks.
-- **Dependency Checking Logistics**: If there are alternative drivers (like `oracledb` or `cx_Oracle`), the dependency checker should only fail if *neither* is installed, rather than failing if the primary one is missing while the alternative is present. Also, optional dependencies should display distinct markers (e.g., `○`) instead of failure markers (`✗`).
+## 4. Documentation & Consistency
+- **Sync SKILL vs Implementation**: The `SKILL.md` MUST stay in sync with the script's actual flags, commands, and rules.
+- **No Internal Paths**: Use project-relative paths. Avoid references to internal/private directories (e.g., `.claude/Skills/...`).
+- **No Hardcoded Versions**: Avoid hardcoding versions (e.g., `analyzer-1.0.0.jar`) in documentation or wrapper scripts. Use wildcards.
+- **English-First Standards**: All technical assets (code comments, docstrings, internal SKILL sections) should prioritize English for international maintainability.
 
-## 5. Documentation & Comments
-- **English-First for Inline Code**: While user-facing guides may be bilingual, all inline Python comments and function docstrings SHOULD be in English to prevent language barriers for international maintainers.
-- **Full English Localization in Scripts**: Ensure all user-facing strings, status messages, and help texts in terminal scripts (like `check_dependencies.py`) are fully translated. No mixing of Chinese and English.
-- **Punctuation Accuracy**: Avoid using full-width (Chinese) punctuation (like `。`, `，`, `）`) in English strings or comments. Use standard ASCII punctuation (`.`, `,`, `)`).
+## 5. CLI & Portfolio Design
+- **Consistent Flag Usage**: Use descriptive and unique flags (e.g., `--sid` and `--serial`) instead of overloading short flags.
+- **Standard Tool Preference**: Prefer standard, portable Unix tools (`grep`, `awk`, `sed`, `pgrep`) over niche dependencies (`rg`) unless verified.
+- **Actionable Error Messages**: Return non-zero exit codes on failure and list exactly which arguments are missing or which dependency failed.
 
 ## Execution
-If the user asks you to "check my code" using this skill, immediately read the files they modified or the files in the current working directory, run `grep_search` if needed, and produce a concise Review Report listing any violations of the rules above. Provide direct suggestions or diffs to fix them.
+Review the provided code or recent changes. Produce a **Review Report** categorizing issues as **Critical**, **Major**, or **Minor**. Provide specific code suggestions or diffs for every identified violation.
