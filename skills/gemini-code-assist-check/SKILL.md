@@ -66,6 +66,10 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Identify and refactor duplicated logic patterns (e.g., subprocess execution with timeout handling).
   - Extract shared functionality into reusable helper functions.
   - Look for similar try-except blocks, timing code, and error handling patterns.
+- **Test Data Consistency**:
+  - Test fixture data should be logically consistent with real-world calculations.
+  - Example: If `used=88.5` and `total=100.0`, then `pct_used` should be `88.5`, not `83.2`.
+  - Inconsistent test data can mask bugs and mislead future maintainers.
 - **Shell JSON String Escaping**:
   - The `paste -sd '\n'` pattern is buggy for single-line input (returns empty string).
   - Use `paste -sd '\\n'` or `paste -sd "\\\n"` to properly escape the newline separator.
@@ -88,6 +92,9 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - ALWAYS check if `mktemp` succeeded before using the temporary file.
   - Example: `_tmp=$(mktemp); if [ ! -f "$_tmp" ]; then handle_error; fi`.
   - mktemp can fail due to permissions or full disk, causing subsequent commands to fail.
+  - ALWAYS use `trap` to ensure cleanup on script exit/interrupt.
+  - Example: `trap 'rm -f "$_tmp"' EXIT INT TERM` immediately after mktemp.
+  - Reset trap after cleanup: `trap - EXIT INT TERM`.
 - **Shell Integer Comparison with Float Values**:
   - Shell arithmetic comparison `[ "$var" -gt 0 ]` only handles integers.
   - If validation allows decimal points, use `${var%.*}` to truncate before comparison.
