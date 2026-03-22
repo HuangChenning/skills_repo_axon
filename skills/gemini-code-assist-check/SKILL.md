@@ -142,6 +142,12 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Config file values, SQL results, and user input can contain unexpected data.
   - Example: `try: value = float(s); except ValueError: handle_error()`.
   - This prevents script crashes on malformed input.
+- **Python JSON Value Type Safety**:
+  - JSON values loaded from files may be strings instead of expected numeric types.
+  - Example: `{"usage_percent": "85.5"}` instead of `{"usage_percent": 85.5}`.
+  - ALWAYS use type checking before numeric operations on JSON values.
+  - Example: `if isinstance(v, (int, float)): return float(v); elif isinstance(v, str): return float(v)`.
+  - This prevents TypeError when comparing JSON values with thresholds.
 - **Python Resource Management**:
   - ALWAYS use `with` statement for file operations, database connections, and locks.
   - Example: `with open(file, 'r') as f:` instead of `f = open(file); ... f.close()`.
