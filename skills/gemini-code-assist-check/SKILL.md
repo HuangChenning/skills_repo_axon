@@ -17,8 +17,9 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
 - **Command Injection Prevention (Python)**:
   - NEVER use string formatting (`.format()`, f-strings, `%`) to build command scripts with user-provided connection strings.
   - Example vulnerability: `rman_script = "connect target {0};\n...".format(db_user)` - attacker can inject commands via newlines in `db_user`.
-  - ALWAYS validate user inputs for dangerous characters (newlines `\r\n`, semicolons, etc.) before using them in formatted strings.
-  - Use proper validation: `if any(c in db_user for c in '\r\n'): raise SecurityError(...)`
+  - ALWAYS validate user inputs for dangerous characters before using them in formatted strings.
+  - Dangerous characters include: newlines (`\r\n`), semicolon (`;`), pipe (`|`), ampersand (`&`), dollar (`$`), backtick (`` ` ``).
+  - Use proper validation: `dangerous = '\r\n;|&$`'; if any(c in db_user for c in dangerous): raise SecurityError(...)`
 - **Shell Variable Default Values for JSON**:
   - SQL queries may return NULL or empty results, causing shell variables to be empty.
   - Empty variables in JSON output create invalid JSON (e.g., `"field": ,`).
@@ -149,6 +150,11 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Config file values, SQL results, and user input can contain unexpected data.
   - Example: `try: value = float(s); except ValueError: handle_error()`.
   - This prevents script crashes on malformed input.
+- **Python List Index Safety**:
+  - ALWAYS check list length before accessing indices, especially when parsing split results.
+  - Example: `parts = s.split('|'); if len(parts) >= 3: use(parts[0], parts[1], parts[2])`.
+  - Use `>=` instead of `==` to be more tolerant of extra fields.
+  - Log a warning when format is unexpected to aid debugging.
 - **Python JSON Value Type Safety**:
   - JSON values loaded from files may be strings instead of expected numeric types.
   - Example: `{"usage_percent": "85.5"}` instead of `{"usage_percent": 85.5}`.
