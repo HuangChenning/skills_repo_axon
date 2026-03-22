@@ -84,6 +84,10 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - ALWAYS check for this error prefix before using the result.
   - Failing to check leads to error strings being embedded in JSON output.
   - Example: `case "$RESULT" in __SQL_ERROR__:\*) handle_error ;; esac`
+- **Shell Temporary File Safety**:
+  - ALWAYS check if `mktemp` succeeded before using the temporary file.
+  - Example: `_tmp=$(mktemp); if [ ! -f "$_tmp" ]; then handle_error; fi`.
+  - mktemp can fail due to permissions or full disk, causing subsequent commands to fail.
 - **Shell Integer Comparison with Float Values**:
   - Shell arithmetic comparison `[ "$var" -gt 0 ]` only handles integers.
   - If validation allows decimal points, use `${var%.*}` to truncate before comparison.
@@ -131,6 +135,13 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Example: `except (IOError, yaml.YAMLError) as e:` instead of `except Exception as e:`.
   - NEVER use bare `except:` without specifying exception type - it catches KeyboardInterrupt and SystemExit.
   - Use `raise ... from e` to preserve exception chain when re-raising.
+  - NEVER raise generic `Exception` when caller catches specific exceptions - use `ValueError`, `TypeError`, etc.
+  - Example: If caller uses `except (ValueError, IndexError)`, internal code must raise `ValueError`, not `Exception`.
+- **Python Numeric Conversion Safety**:
+  - ALWAYS wrap `float()` and `int()` conversions in try-except when input may be non-numeric.
+  - Config file values, SQL results, and user input can contain unexpected data.
+  - Example: `try: value = float(s); except ValueError: handle_error()`.
+  - This prevents script crashes on malformed input.
 - **Python Resource Management**:
   - ALWAYS use `with` statement for file operations, database connections, and locks.
   - Example: `with open(file, 'r') as f:` instead of `f = open(file); ... f.close()`.
