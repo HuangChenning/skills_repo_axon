@@ -129,6 +129,40 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Broad exception handling can mask underlying bugs and make debugging harder.
   - Catch specific exceptions: `IOError`, `yaml.YAMLError`, `FileNotFoundError`, `ValueError`, `IndexError`, `subprocess.SubprocessError`, etc.
   - Example: `except (IOError, yaml.YAMLError) as e:` instead of `except Exception as e:`.
+  - NEVER use bare `except:` without specifying exception type - it catches KeyboardInterrupt and SystemExit.
+  - Use `raise ... from e` to preserve exception chain when re-raising.
+- **Python Resource Management**:
+  - ALWAYS use `with` statement for file operations, database connections, and locks.
+  - Example: `with open(file, 'r') as f:` instead of `f = open(file); ... f.close()`.
+  - This ensures resources are properly closed even if exceptions occur.
+- **Python Optional Return Handling**:
+  - Functions returning `Optional[T]` must be checked for `None` before use.
+  - Example: `result = get_value(); if result is not None: process(result)`.
+  - Avoid assuming Optional return values are always present.
+- **Python SQL Injection Prevention**:
+  - NEVER use string formatting to build SQL queries with user input.
+  - Use parameterized queries: `cursor.execute("SELECT * FROM t WHERE id = ?", (user_id,))`.
+  - Example vulnerability: `f"SELECT * FROM t WHERE name = '{name}'"` - SQL injection risk.
+- **Python Subprocess Security**:
+  - ALWAYS use list form for subprocess commands when arguments contain user input.
+  - Example: `subprocess.run(['cmd', '--option', user_input])` instead of `f"cmd --option {user_input}"`.
+  - Use `shlex.quote()` if shell=True is necessary.
+- **Python Logging Best Practices**:
+  - Use appropriate log levels: `debug` for development, `info` for normal operations, `warning` for recoverable issues, `error` for failures.
+  - NEVER log sensitive data (passwords, connection strings, API keys) - use masking functions.
+  - Use lazy formatting: `logger.debug("Value: %s", value)` instead of `logger.debug(f"Value: {value}")` for performance.
+- **Python Generator for Large Data**:
+  - Use generators (`yield`) instead of lists when processing large datasets.
+  - Example: `def read_large_file(): for line in f: yield line` instead of `return f.readlines()`.
+  - This prevents memory issues with large files or database results.
+- **Python Dictionary/List Comprehension**:
+  - Prefer comprehensions over loops for simple transformations.
+  - Example: `[x*2 for x in items]` is more Pythonic than `result = []; for x in items: result.append(x*2)`.
+  - But avoid complex nested comprehensions that harm readability.
+- **Python Context Manager for Custom Resources**:
+  - Classes managing resources (files, connections, locks) should implement `__enter__` and `__exit__`.
+  - Or use `@contextlib.contextmanager` decorator for simple cases.
+  - This ensures proper cleanup with `with` statement.
 
 ## Execution
 Review the provided code or recent changes. Produce a **Review Report** categorizing issues as **Critical**, **Major**, or **Minor**. Provide specific code suggestions or diffs for every identified violation.
