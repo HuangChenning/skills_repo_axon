@@ -124,6 +124,11 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Unquoted variables can cause word splitting and globbing issues.
   - Example: Use `"$SQL_CLIENT"` instead of `$SQL_CLIENT`.
   - Exception: Variables intentionally used for word splitting (rare).
+- **Python Specific Exception Handling**:
+  - NEVER use broad `except Exception:` when you can catch specific exceptions.
+  - Broad exception handling can mask underlying bugs and make debugging harder.
+  - Catch specific exceptions: `IOError`, `yaml.YAMLError`, `FileNotFoundError`, `ValueError`, `IndexError`, `subprocess.SubprocessError`, etc.
+  - Example: `except (IOError, yaml.YAMLError) as e:` instead of `except Exception as e:`.
 
 ## Execution
 Review the provided code or recent changes. Produce a **Review Report** categorizing issues as **Critical**, **Major**, or **Minor**. Provide specific code suggestions or diffs for every identified violation.
