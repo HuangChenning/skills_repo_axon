@@ -14,12 +14,23 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
 - **Password Masking**: Ensure that sensitive inputs are masked and never leaked to stdout/stderr or persistent logs.
 - **XSS Prevention in Reports**: HTML-based reports MUST escape data-driven content to prevent XSS.
 - **Secure Temporary Files**: Avoid predictable paths like `/tmp/temp.txt`. Use `mktemp -d` or `tempfile` to create isolated working directories.
+- **SSH Host Key Verification**: SSH configurations MUST enable host key verification by default (`StrictHostKeyChecking=yes` or `strict_host_key: true`). Disabling it (`false`) makes connections vulnerable to man-in-the-middle attacks. Users can explicitly disable for trusted environments only.
 - **Command Injection Prevention (Python)**:
   - NEVER use string formatting (`.format()`, f-strings, `%`) to build command scripts with user-provided connection strings.
   - Example vulnerability: `rman_script = "connect target {0};\n...".format(db_user)` - attacker can inject commands via newlines in `db_user`.
   - ALWAYS validate user inputs for dangerous characters before using them in formatted strings.
   - Dangerous characters include: newlines (`\r\n`), semicolon (`;`), pipe (`|`), ampersand (`&`), dollar (`$`), backtick (`` ` ``).
   - Use proper validation: `dangerous = '\r\n;|&$`'; if any(c in db_user for c in dangerous): raise SecurityError(...)`
+- **Command Injection Prevention - YAML Config Commands (Python)**:
+  - NEVER execute commands from YAML configuration files directly via `exec_command()` or similar functions.
+  - YAML config commands should be treated as untrusted input - malicious users could inject commands like `'; rm -rf /'`.
+  - Instead of executing raw command strings, parse commands into argument lists and execute without shell.
+  - Or strictly validate commands against a whitelist of allowed commands and patterns before execution.
+- **Password Security - Command Line Arguments**:
+  - NEVER pass database passwords as part of command line arguments or connection strings visible in process list (`ps`).
+  - Command line arguments are visible to all users on the system, creating a security risk.
+  - Use secure credential methods: password files, Oracle Wallet, environment variables, or interactive prompts.
+  - Example: SQLcl supports password files and Oracle Wallet - implement and use these instead of `user/password@host` in command line.
 - **Shell Variable Default Values for JSON**:
   - SQL queries may return NULL or empty results, causing shell variables to be empty.
   - Empty variables in JSON output create invalid JSON (e.g., `"field": ,`).
@@ -35,6 +46,7 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Correctly handle alternative drivers (e.g., `oracledb` OR `cx_Oracle`). 
   - Verify standard tool existence (`sqlplus`, `psql`, `java`) before execution.
 - **Avoid Duplication**: Centralize shared logic like SQL formatting and connection handling.
+- **Single Source of Truth for SQL**: SQL queries should be defined in configuration files (YAML/JSON), not hardcoded in Python. This prevents duplication between code and config, making maintenance easier. Python should load queries from config rather than defining fallback queries inline.
 - **Character Encoding (Python)**:
   - Never hardcode `decode('utf-8')` for subprocess output. Use `decode(sys.stdout.encoding or 'utf-8', errors='replace')` to handle system locale differences gracefully.
   - This prevents `UnicodeDecodeError` when SQL clients or system commands output non-UTF-8 characters.
@@ -48,6 +60,7 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
 - **Shell Efficiency**:
   - Avoid long chains of `grep -v` commands that spawn a new process for each pattern.
   - Combine multiple pattern filters into a single `sed -E` or `grep -E` call for better performance.
+- **Shell Command Preference (ss vs netstat)**: Prefer modern `ss` command over legacy `netstat` for network operations. Use `ss` first with fallback to `netstat` for compatibility: `ss -ant 2>/dev/null || netstat -ant 2>/dev/null`.
 - **Shell POSIX Compatibility**:
   - When using `#!/bin/sh`, MUST avoid bashism (bash-specific syntax).
   - Forbidden: `${#var}` for string length - use `$(expr length "$var")` instead.
@@ -66,6 +79,11 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
 - **Shell POSIX Compatibility (Extended)**:
   - Forbidden: `sed -E` for extended regex - use basic regex with `sed` instead (patterns are usually simple enough).
   - Note: `sed -E` is widely supported but not POSIX standard; remove `-E` flag for strict POSIX compliance.
+- **Shell Command Injection Prevention - eval**:
+  - NEVER use `eval` to execute commands derived from configuration files or user input.
+  - `eval` executes arbitrary code and is extremely dangerous with untrusted input.
+  - Malicious commands in configuration (e.g., `'; rm -rf /'`) will be executed by `eval`.
+  - Use direct command execution or strict command validation instead of `eval`.
 - **Code Duplication Prevention**:
   - Identify and refactor duplicated logic patterns (e.g., subprocess execution with timeout handling).
   - Extract shared functionality into reusable helper functions.
@@ -120,6 +138,15 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - All command examples in documentation should use consistent working directory context.
   - If some examples require `cd` to a directory, all similar examples should follow the same pattern.
   - Avoid mixing "run from root" and "run from subdirectory" patterns in the same section.
+- **Documentation Security Accuracy**:
+  - Security-related documentation MUST accurately reflect the actual implementation behavior.
+  - Incorrectly documenting security features (e.g., stating insecure defaults) can lead to misconfiguration.
+  - Example: If code defaults to `strict_host_key: true`, documentation must not state it defaults to `no`.
+- **SQL Query Compatibility**:
+  - SQL syntax must be compatible with all documented database versions.
+  - Example: `FETCH FIRST N ROWS ONLY` is Oracle 12c+ only; use `ROWNUM` for 11g compatibility.
+  - Use `NULLIF(divisor, 0)` to prevent division by zero errors in calculations.
+  - Example: `ROUND((1 - (phy.value / NULLIF(cur.value + con.value, 0))) * 100, 2)`
 
 ## 3. AI Agent & ADK Standards
 - **Precision in Tool Imports**:
@@ -163,6 +190,7 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Example: `parts = s.split('|'); if len(parts) >= 3: use(parts[0], parts[1], parts[2])`.
   - Use `>=` instead of `==` to be more tolerant of extra fields.
   - Log a warning when format is unexpected to aid debugging.
+- **SQL Output Format Standardization**: SQL queries should produce consistent, easily parsable output formats. When handling multiple variants (CDB vs non-CDB), standardize on a unified format (e.g., `pdb_name|tablespace_name|used_percent`) rather than parsing different column counts. Use placeholder values (e.g., 'N/A') for inapplicable fields.
 - **Python JSON Value Type Safety**:
   - JSON values loaded from files may be strings instead of expected numeric types.
   - Example: `{"usage_percent": "85.5"}` instead of `{"usage_percent": 85.5}`.
