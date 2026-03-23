@@ -21,6 +21,9 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - ALWAYS validate user inputs for dangerous characters before using them in formatted strings.
   - Dangerous characters include: newlines (`\r\n`), semicolon (`;`), pipe (`|`), ampersand (`&`), dollar (`$`), backtick (`` ` ``).
   - Use proper validation: `dangerous = '\r\n;|&$`'; if any(c in db_user for c in dangerous): raise SecurityError(...)`
+  - **Command Injection Patterns**: Check for injection patterns like `&&`, `$(`, `${`, `<<`, `>>` in commands from YAML config.
+  - Note: `||` can be allowed for legitimate fallback commands, but `&&` should be blocked as it enables command chaining.
+  - Validate the ENTIRE command string, not just the first word - attackers can inject after whitelisted commands.
 - **Command Injection Prevention - YAML Config Commands (Python)**:
   - NEVER execute commands from YAML configuration files directly via `exec_command()` or similar functions.
   - YAML config commands should be treated as untrusted input - malicious users could inject commands like `'; rm -rf /'`.
@@ -29,8 +32,10 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
 - **Password Security - Command Line Arguments**:
   - NEVER pass database passwords as part of command line arguments or connection strings visible in process list (`ps`).
   - Command line arguments are visible to all users on the system, creating a security risk.
-  - Use secure credential methods: password files, Oracle Wallet, environment variables, or interactive prompts.
-  - Example: SQLcl supports password files and Oracle Wallet - implement and use these instead of `user/password@host` in command line.
+  - Use secure credential methods: stdin input, Oracle Wallet, environment variables, or interactive prompts.
+  - **NEVER write passwords to temporary files on disk** - this creates a security risk even with restricted permissions.
+  - Example: Pass password via stdin to SQLcl: `subprocess.run(cmd, input=password + '\n' + sql_script, ...)`
+  - Example: SQLcl supports Oracle Wallet - implement and use these instead of `user/password@host` in command line.
 - **Shell Variable Default Values for JSON**:
   - SQL queries may return NULL or empty results, causing shell variables to be empty.
   - Empty variables in JSON output create invalid JSON (e.g., `"field": ,`).
@@ -47,6 +52,7 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Verify standard tool existence (`sqlplus`, `psql`, `java`) before execution.
 - **Avoid Duplication**: Centralize shared logic like SQL formatting and connection handling.
 - **Single Source of Truth for SQL**: SQL queries should be defined in configuration files (YAML/JSON), not hardcoded in Python. This prevents duplication between code and config, making maintenance easier. Python should load queries from config rather than defining fallback queries inline.
+- **Configuration Consistency**: Security-related constants (like `DANGEROUS_CHARS`, `ALLOWED_SHELL_COMMANDS`) defined in multiple files MUST be synchronized. Ideally, define once and import, or use a shared configuration module. Inconsistent validation rules create security holes.
 - **Character Encoding (Python)**:
   - Never hardcode `decode('utf-8')` for subprocess output. Use `decode(sys.stdout.encoding or 'utf-8', errors='replace')` to handle system locale differences gracefully.
   - This prevents `UnicodeDecodeError` when SQL clients or system commands output non-UTF-8 characters.
@@ -142,11 +148,20 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Security-related documentation MUST accurately reflect the actual implementation behavior.
   - Incorrectly documenting security features (e.g., stating insecure defaults) can lead to misconfiguration.
   - Example: If code defaults to `strict_host_key: true`, documentation must not state it defaults to `no`.
+- **Documentation Consistency**:
+  - All documentation in a single project should use consistent language (English or Chinese).
+  - Mixed languages in the same document reduce clarity and professionalism.
+  - Configuration schema documentation must match the main SKILL.md - contradictions confuse users.
 - **SQL Query Compatibility**:
   - SQL syntax must be compatible with all documented database versions.
   - Example: `FETCH FIRST N ROWS ONLY` is Oracle 12c+ only; use `ROWNUM` for 11g compatibility.
   - Use `NULLIF(divisor, 0)` to prevent division by zero errors in calculations.
   - Example: `ROUND((1 - (phy.value / NULLIF(cur.value + con.value, 0))) * 100, 2)`
+  - Use `dba_tablespace_usage_metrics` view for simpler, more performant tablespace queries instead of complex joins.
+- **SQL Query Performance**:
+  - Prefer simpler views over complex joins of multiple DBA tables when equivalent information is available.
+  - Example: `dba_tablespace_usage_metrics` provides the same data as complex joins of `dba_tablespaces`, `dba_data_files`, `dba_free_space`.
+  - Complex joins on large catalogs can be slow; use purpose-built views when available.
 
 ## 3. AI Agent & ADK Standards
 - **Precision in Tool Imports**:
@@ -191,6 +206,11 @@ When reviewing code, skills, or agent implementations, you MUST enforce the foll
   - Use `>=` instead of `==` to be more tolerant of extra fields.
   - Log a warning when format is unexpected to aid debugging.
 - **SQL Output Format Standardization**: SQL queries should produce consistent, easily parsable output formats. When handling multiple variants (CDB vs non-CDB), standardize on a unified format (e.g., `pdb_name|tablespace_name|used_percent`) rather than parsing different column counts. Use placeholder values (e.g., 'N/A') for inapplicable fields.
+- **Health Assessment Completeness**:
+  - Health assessment should cover ALL critical metrics, not just database metrics.
+  - Include OS-level metrics: disk usage, CPU, memory, swap.
+  - A full filesystem is a critical alert that must be reflected in health assessment.
+  - Example: If disk shows 100% usage in metrics, health assessment should report CRITICAL status.
 - **Python JSON Value Type Safety**:
   - JSON values loaded from files may be strings instead of expected numeric types.
   - Example: `{"usage_percent": "85.5"}` instead of `{"usage_percent": 85.5}`.
