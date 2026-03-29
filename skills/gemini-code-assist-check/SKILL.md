@@ -1,254 +1,706 @@
 ---
 name: gemini-code-assist-check
-description: A comprehensive code reviewer skill synthesized from Gemini Code Assist feedback and ADK (Agent Development Kit) best practices. Enforces strict standards for security, robustness, documentation consistency, and AI agent implementation patterns.
+version: "2.0.0"
+description: >
+  Offline code review skill based on 762 Gemini Code Assist comments from enmotech/db-ops-skills PRs.
+  Audits code for security, robustness, JSON safety, exception handling, and consistency.
+  Triggers: "audit this code", "review for Gemini standards", "offline code review", "check code quality".
+metadata:
+  openclaw:
+    requires:
+      bins: ["bash"]
+    optionalBins: ["python3"]
+env:
+  - name: TARGET_PATH
+    required: false
+    description: Target file or directory to audit (defaults to current directory)
+  - name: SEVERITY_FILTER
+    required: false
+    description: Minimum severity level to report (critical, high, medium, all). Default: all
+tools:
+  - bash: Required. Executes audit scripts.
+  - python3: Optional. Runs advanced static analysis.
+files:
+  read:
+    - references/pattern-analysis.md: Gemini comment pattern analysis
+    - references/json-safety-patterns.md: JSON generation best practices
+    - references/exception-handling-guide.md: Exception handling patterns
+    - references/consistency-checklist.md: Cross-file consistency rules
+    - references/fix-verification-guide.md: Fix verification and global search strategies
+    - <workspace_dir>/task-list.json: Audit state
+    - <workspace_dir>/audit-report.md: Generated audit report
+  write:
+    - <workspace_dir>/task-list.json: Audit state updates
+    - <workspace_dir>/audit-report.md: Final audit report
 ---
 
-# Gemini Code Assist & ADK Checker
+# Gemini Code Assist Checker
 
-You are an expert database tools and AI agent code reviewer. Your task is to audit code against the high standards established by `Gemini Code Assist` and the `ADK (Agent Development Kit)` across the `db-ops-skills` ecosystem.
+离线代码审计技能，基于对 **762 条 Gemini Code Assist 评论**的分析，覆盖 **33 个 PR**。
 
-When reviewing code, skills, or agent implementations, you MUST enforce the following strict rules:
+> ⚠️ **审计原则**: 宁可误报不可漏报。Critical 问题必须阻断合并，High 问题建议修复后合并，Medium 问题可记录后续处理。
 
-## 1. Security & Credentials
-- **No Plaintext Passwords**: Never use real credentials in code, config templates (`db_config.env`), or documentation. Use `<PASSWORD>` or environment variables.
-- **Password Masking**: Ensure that sensitive inputs are masked and never leaked to stdout/stderr or persistent logs.
-- **XSS Prevention in Reports**: HTML-based reports MUST escape data-driven content to prevent XSS.
-- **Secure Temporary Files**: Avoid predictable paths like `/tmp/temp.txt`. Use `mktemp -d` or `tempfile` to create isolated working directories.
-- **SSH Host Key Verification**: SSH configurations MUST enable host key verification by default (`StrictHostKeyChecking=yes` or `strict_host_key: true`). Disabling it (`false`) makes connections vulnerable to man-in-the-middle attacks. Users can explicitly disable for trusted environments only.
-- **Command Injection Prevention (Python)**:
-  - NEVER use string formatting (`.format()`, f-strings, `%`) to build command scripts with user-provided connection strings.
-  - Example vulnerability: `rman_script = "connect target {0};\n...".format(db_user)` - attacker can inject commands via newlines in `db_user`.
-  - ALWAYS validate user inputs for dangerous characters before using them in formatted strings.
-  - Dangerous characters include: newlines (`\r\n`), semicolon (`;`), pipe (`|`), ampersand (`&`), dollar (`$`), backtick (`` ` ``).
-  - Use proper validation: `dangerous = '\r\n;|&$`'; if any(c in db_user for c in dangerous): raise SecurityError(...)`
-  - **Command Injection Patterns**: Check for injection patterns like `&&`, `$(`, `${`, `<<`, `>>` in commands from YAML config.
-  - Note: `||` can be allowed for legitimate fallback commands, but `&&` should be blocked as it enables command chaining.
-  - Validate the ENTIRE command string, not just the first word - attackers can inject after whitelisted commands.
-- **Command Injection Prevention - YAML Config Commands (Python)**:
-  - NEVER execute commands from YAML configuration files directly via `exec_command()` or similar functions.
-  - YAML config commands should be treated as untrusted input - malicious users could inject commands like `'; rm -rf /'`.
-  - Instead of executing raw command strings, parse commands into argument lists and execute without shell.
-  - Or strictly validate commands against a whitelist of allowed commands and patterns before execution.
-- **Password Security - Command Line Arguments**:
-  - NEVER pass database passwords as part of command line arguments or connection strings visible in process list (`ps`).
-  - Command line arguments are visible to all users on the system, creating a security risk.
-  - Use secure credential methods: stdin input, Oracle Wallet, environment variables, or interactive prompts.
-  - **NEVER write passwords to temporary files on disk** - this creates a security risk even with restricted permissions.
-  - Example: Pass password via stdin to SQLcl: `subprocess.run(cmd, input=password + '\n' + sql_script, ...)`
-  - Example: SQLcl supports Oracle Wallet - implement and use these instead of `user/password@host` in command line.
-- **Shell Variable Default Values for JSON**:
-  - SQL queries may return NULL or empty results, causing shell variables to be empty.
-  - Empty variables in JSON output create invalid JSON (e.g., `"field": ,`).
-  - ALWAYS use default value syntax `${VAR:-0}` when using variables in JSON generation.
-  - Example: `"total_capacity_gb": ${TOTAL:-0},` ensures valid JSON even when TOTAL is empty.
+---
 
-## 2. Code Robustness & Quality
-- **Resource Management**: 
-  - Avoid loading entire large tables (e.g., `ASH` or `AWR` data) into memory. Use streaming or pagination.
-  - Fix potential `OutOfMemoryError` or infinite loop risks.
-- **Cleanup and Safety**: Ensure locks, temporary files, and database sessions are cleaned up in `finally` (Python) or `trap` (Shell) blocks.
-- **Dependency Logic**: 
-  - Correctly handle alternative drivers (e.g., `oracledb` OR `cx_Oracle`). 
-  - Verify standard tool existence (`sqlplus`, `psql`, `java`) before execution.
-- **Avoid Duplication**: Centralize shared logic like SQL formatting and connection handling.
-- **Single Source of Truth for SQL**: SQL queries should be defined in configuration files (YAML/JSON), not hardcoded in Python. This prevents duplication between code and config, making maintenance easier. Python should load queries from config rather than defining fallback queries inline.
-- **Configuration Consistency**: Security-related constants (like `DANGEROUS_CHARS`, `ALLOWED_SHELL_COMMANDS`) defined in multiple files MUST be synchronized. Ideally, define once and import, or use a shared configuration module. Inconsistent validation rules create security holes.
-- **Character Encoding (Python)**:
-  - Never hardcode `decode('utf-8')` for subprocess output. Use `decode(sys.stdout.encoding or 'utf-8', errors='replace')` to handle system locale differences gracefully.
-  - This prevents `UnicodeDecodeError` when SQL clients or system commands output non-UTF-8 characters.
-  - **Better**: Use `subprocess.run()` with `encoding='utf-8'` and `errors='replace'` parameters to handle decoding automatically.
-  - Example: `subprocess.run(cmd, capture_output=True, encoding='utf-8', errors='replace')` returns string output directly.
-  - This eliminates manual `.encode()` and `.decode()` calls, making code cleaner and more robust.
-- **Pythonic Code Style**:
-  - Use `any()` with generator expressions instead of nested loops for pattern matching.
-  - Example: `if not any(pattern in line for pattern in skip_patterns):` is preferred over nested for-loop with boolean flag.
-  - Remove unused variables (e.g., `line_stripped` that is assigned but never used).
-- **Shell Efficiency**:
-  - Avoid long chains of `grep -v` commands that spawn a new process for each pattern.
-  - Combine multiple pattern filters into a single `sed -E` or `grep -E` call for better performance.
-- **Shell Command Preference (ss vs netstat)**: Prefer modern `ss` command over legacy `netstat` for network operations. Use `ss` first with fallback to `netstat` for compatibility: `ss -ant 2>/dev/null || netstat -ant 2>/dev/null`.
-- **Shell POSIX Compatibility**:
-  - When using `#!/bin/sh`, MUST avoid bashism (bash-specific syntax).
-  - Forbidden: `${#var}` for string length - use `$(expr length "$var")` instead.
-  - Forbidden: `timeout` command (GNU coreutils extension) - implement POSIX-compatible fallback.
-  - Forbidden: `[[ ]]` for tests - use `[ ]` instead.
-  - Forbidden: `==` for string comparison - use `=` instead.
-  - Forbidden: arrays like `${array[@]}` - use positional parameters or other POSIX alternatives.
-- **Python Numeric Parsing**:
-  - Never use `str.isdigit()` to validate strings that may contain decimal numbers (e.g., "123.0").
-  - Use `try-except float()` or a custom `_is_numeric()` helper function instead.
-  - `isdigit()` is only safe for pure integer strings without decimal points or signs.
-  - When converting YAML config values to int, use `int(float(value))` to handle both "7" and "7.0" formats safely.
-- **Python Type Conversion Robustness**:
-  - Avoid direct `int(value)` on user input that might be float strings.
-  - Use `int(float(value))` pattern when the input could be either integer or float representation.
-- **Shell POSIX Compatibility (Extended)**:
-  - Forbidden: `sed -E` for extended regex - use basic regex with `sed` instead (patterns are usually simple enough).
-  - Note: `sed -E` is widely supported but not POSIX standard; remove `-E` flag for strict POSIX compliance.
-- **Shell Command Injection Prevention - eval**:
-  - NEVER use `eval` to execute commands derived from configuration files or user input.
-  - `eval` executes arbitrary code and is extremely dangerous with untrusted input.
-  - Malicious commands in configuration (e.g., `'; rm -rf /'`) will be executed by `eval`.
-  - Use direct command execution or strict command validation instead of `eval`.
-- **Code Duplication Prevention**:
-  - Identify and refactor duplicated logic patterns (e.g., subprocess execution with timeout handling).
-  - Extract shared functionality into reusable helper functions.
-  - Look for similar try-except blocks, timing code, and error handling patterns.
-- **Function Length and Complexity**:
-  - Keep functions focused and under 50-100 lines when possible.
-  - If a function handles multiple distinct cases (e.g., FRA, ASM, OS storage types), consider extracting each case into a separate helper function.
-  - Example: Instead of `if storage_type == "FRA": ... elif storage_type == "ASM": ...` in main function, create `_get_fra_space()`, `_get_asm_space()` helpers.
-  - Benefits: Improved readability, easier testing, better separation of concerns.
-- **Test Data Consistency**:
-  - Test fixture data should be logically consistent with real-world calculations.
-  - Example: If `used=88.5` and `total=100.0`, then `pct_used` should be `88.5`, not `83.2`.
-  - Inconsistent test data can mask bugs and mislead future maintainers.
-- **Shell JSON String Escaping**:
-  - The `paste -sd '\n'` pattern is buggy for single-line input (returns empty string).
-  - Use `paste -sd '\\n'` or `paste -sd "\\\n"` to properly escape the newline separator.
-  - Always test JSON escaping functions with both single-line and multi-line inputs.
-- **Python int() with Float Strings**:
-  - After `_is_numeric()` validates a string as numeric, do NOT use `int(value)` directly.
-  - The string might be "123.0" which `_is_numeric()` accepts but `int("123.0")` raises `ValueError`.
-  - Always use `int(float(value))` pattern after numeric validation.
-- **Shell SQL Query Empty Result Handling**:
-  - SQL queries may return empty results, causing variables to be empty strings.
-  - Empty variables in JSON output lead to invalid JSON (e.g., `"total_capacity_gb": ,`).
-  - Always check if query results are empty before using them in JSON generation.
-  - Example: `if [ -z "$FRA_INFO" ]; then ... provide default values or error handling ... fi`
-- **Shell SQL Error Handling**:
-  - When `run_sql` encounters an error, it returns a string prefixed with `__SQL_ERROR__:`.
-  - ALWAYS check for this error prefix before using the result.
-  - Failing to check leads to error strings being embedded in JSON output.
-  - Example: `case "$RESULT" in __SQL_ERROR__:\*) handle_error ;; esac`
-- **Shell Temporary File Safety**:
-  - ALWAYS check if `mktemp` succeeded before using the temporary file.
-  - Example: `_tmp=$(mktemp); if [ ! -f "$_tmp" ]; then handle_error; fi`.
-  - mktemp can fail due to permissions or full disk, causing subsequent commands to fail.
-  - ALWAYS use `trap` to ensure cleanup on script exit/interrupt.
-  - Example: `trap 'rm -f "$_tmp"' EXIT INT TERM` immediately after mktemp.
-  - Reset trap after cleanup: `trap - EXIT INT TERM`.
-- **Shell Integer Comparison with Float Values**:
-  - Shell arithmetic comparison `[ "$var" -gt 0 ]` only handles integers.
-  - If validation allows decimal points, use `${var%.*}` to truncate before comparison.
-  - Example: `[ "${TOTAL_KB%.*}" -gt 0 ]` safely handles "123.45".
-- **Metric Calculation Consistency**:
-  - When calculating metrics across different storage types (FRA, ASM, OS), ensure consistent methodology.
-  - Example: If ASM and OS calculate `used_percent` as `used/total*100`, FRA should do the same.
-  - Inconsistent calculations lead to confusing monitoring and incorrect threshold comparisons.
-- **Dry-Run Message Accuracy**:
-  - Dry-run messages should exactly reflect the actual command that would be executed.
-  - Include all keywords from the real command (e.g., `all` in `delete archivelog all`).
-  - Inaccurate messages can mislead users about what the actual operation does.
-- **Documentation Example Consistency**:
-  - All command examples in documentation should use consistent working directory context.
-  - If some examples require `cd` to a directory, all similar examples should follow the same pattern.
-  - Avoid mixing "run from root" and "run from subdirectory" patterns in the same section.
-- **Documentation Security Accuracy**:
-  - Security-related documentation MUST accurately reflect the actual implementation behavior.
-  - Incorrectly documenting security features (e.g., stating insecure defaults) can lead to misconfiguration.
-  - Example: If code defaults to `strict_host_key: true`, documentation must not state it defaults to `no`.
-- **Documentation Consistency**:
-  - All documentation in a single project should use consistent language (English or Chinese).
-  - Mixed languages in the same document reduce clarity and professionalism.
-  - Configuration schema documentation must match the main SKILL.md - contradictions confuse users.
-- **SQL Query Compatibility**:
-  - SQL syntax must be compatible with all documented database versions.
-  - Example: `FETCH FIRST N ROWS ONLY` is Oracle 12c+ only; use `ROWNUM` for 11g compatibility.
-  - Use `NULLIF(divisor, 0)` to prevent division by zero errors in calculations.
-  - Example: `ROUND((1 - (phy.value / NULLIF(cur.value + con.value, 0))) * 100, 2)`
-  - Use `dba_tablespace_usage_metrics` view for simpler, more performant tablespace queries instead of complex joins.
-- **SQL Query Performance**:
-  - Prefer simpler views over complex joins of multiple DBA tables when equivalent information is available.
-  - Example: `dba_tablespace_usage_metrics` provides the same data as complex joins of `dba_tablespaces`, `dba_data_files`, `dba_free_space`.
-  - Complex joins on large catalogs can be slow; use purpose-built views when available.
+## 统计概览
 
-## 3. AI Agent & ADK Standards
-- **Precision in Tool Imports**:
-  - **Correct**: `from google.adk.tools.load_web_page import load_web_page` (imports the tool instance).
-  - **Incorrect**: `from google.adk.tools import load_web_page` (imports the module).
-- **App & Directory Consistency**: The `App(name=...)` parameter MUST match the directory name containing the agent to avoid "Session not found" errors.
-- **State Initialization**: Use `before_agent_callback` to initialize session state variables, preventing `KeyError` crashes on the first turn.
-- **Model Selection**: Never change the model unless explicitly asked. For new agents, prioritize Gemini 3 series (e.g., `gemini-3-flash-preview`).
+| 严重性 | 数量 | 占比 |
+|--------|------|------|
+| Critical | 79 | 10% |
+| High | 191 | 25% |
+| Medium | 492 | 65% |
 
-## 4. Documentation & Consistency
-- **Sync SKILL vs Implementation**: The `SKILL.md` MUST stay in sync with the script's actual flags, commands, and rules.
-- **No Internal Paths**: Use project-relative paths. Avoid references to internal/private directories (e.g., `.claude/Skills/...`).
-- **No Hardcoded Versions**: Avoid hardcoding versions (e.g., `analyzer-1.0.0.jar`) in documentation or wrapper scripts. Use wildcards.
-- **English-First Standards**: All technical assets (code comments, docstrings, internal SKILL sections) should prioritize English for international maintainability.
+---
 
-## 5. CLI & Portfolio Design
-- **Consistent Flag Usage**: Use descriptive and unique flags (e.g., `--sid` and `--serial`) instead of overloading short flags.
-- **Standard Tool Preference**: Prefer standard, portable Unix tools (`grep`, `awk`, `sed`, `pgrep`) over niche dependencies (`rg`) unless verified.
-- **Actionable Error Messages**: Return non-zero exit codes on failure and list exactly which arguments are missing or which dependency failed.
-- **Shell Variable Quoting**:
-  - ALWAYS quote variable expansions used as command arguments.
-  - Unquoted variables can cause word splitting and globbing issues.
-  - Example: Use `"$SQL_CLIENT"` instead of `$SQL_CLIENT`.
-  - Exception: Variables intentionally used for word splitting (rare).
-- **Python Specific Exception Handling**:
-  - NEVER use broad `except Exception:` when you can catch specific exceptions.
-  - Broad exception handling can mask underlying bugs and make debugging harder.
-  - Catch specific exceptions: `IOError`, `yaml.YAMLError`, `FileNotFoundError`, `ValueError`, `IndexError`, `subprocess.SubprocessError`, etc.
-  - Example: `except (IOError, yaml.YAMLError) as e:` instead of `except Exception as e:`.
-  - NEVER use bare `except:` without specifying exception type - it catches KeyboardInterrupt and SystemExit.
-  - Use `raise ... from e` to preserve exception chain when re-raising.
-  - NEVER raise generic `Exception` when caller catches specific exceptions - use `ValueError`, `TypeError`, etc.
-  - Example: If caller uses `except (ValueError, IndexError)`, internal code must raise `ValueError`, not `Exception`.
-- **Python Numeric Conversion Safety**:
-  - ALWAYS wrap `float()` and `int()` conversions in try-except when input may be non-numeric.
-  - Config file values, SQL results, and user input can contain unexpected data.
-  - Example: `try: value = float(s); except ValueError: handle_error()`.
-  - This prevents script crashes on malformed input.
-- **Python List Index Safety**:
-  - ALWAYS check list length before accessing indices, especially when parsing split results.
-  - Example: `parts = s.split('|'); if len(parts) >= 3: use(parts[0], parts[1], parts[2])`.
-  - Use `>=` instead of `==` to be more tolerant of extra fields.
-  - Log a warning when format is unexpected to aid debugging.
-- **SQL Output Format Standardization**: SQL queries should produce consistent, easily parsable output formats. When handling multiple variants (CDB vs non-CDB), standardize on a unified format (e.g., `pdb_name|tablespace_name|used_percent`) rather than parsing different column counts. Use placeholder values (e.g., 'N/A') for inapplicable fields.
-- **Health Assessment Completeness**:
-  - Health assessment should cover ALL critical metrics, not just database metrics.
-  - Include OS-level metrics: disk usage, CPU, memory, swap.
-  - A full filesystem is a critical alert that must be reflected in health assessment.
-  - Example: If disk shows 100% usage in metrics, health assessment should report CRITICAL status.
-- **Python JSON Value Type Safety**:
-  - JSON values loaded from files may be strings instead of expected numeric types.
-  - Example: `{"usage_percent": "85.5"}` instead of `{"usage_percent": 85.5}`.
-  - ALWAYS use type checking before numeric operations on JSON values.
-  - Example: `if isinstance(v, (int, float)): return float(v); elif isinstance(v, str): return float(v)`.
-  - This prevents TypeError when comparing JSON values with thresholds.
-- **Python Resource Management**:
-  - ALWAYS use `with` statement for file operations, database connections, and locks.
-  - Example: `with open(file, 'r') as f:` instead of `f = open(file); ... f.close()`.
-  - This ensures resources are properly closed even if exceptions occur.
-- **Python Optional Return Handling**:
-  - Functions returning `Optional[T]` must be checked for `None` before use.
-  - Example: `result = get_value(); if result is not None: process(result)`.
-  - Avoid assuming Optional return values are always present.
-- **Python SQL Injection Prevention**:
-  - NEVER use string formatting to build SQL queries with user input.
-  - Use parameterized queries: `cursor.execute("SELECT * FROM t WHERE id = ?", (user_id,))`.
-  - Example vulnerability: `f"SELECT * FROM t WHERE name = '{name}'"` - SQL injection risk.
-- **Python Subprocess Security**:
-  - ALWAYS use list form for subprocess commands when arguments contain user input.
-  - Example: `subprocess.run(['cmd', '--option', user_input])` instead of `f"cmd --option {user_input}"`.
-  - Use `shlex.quote()` if shell=True is necessary.
-- **Python Logging Best Practices**:
-  - Use appropriate log levels: `debug` for development, `info` for normal operations, `warning` for recoverable issues, `error` for failures.
-  - NEVER log sensitive data (passwords, connection strings, API keys) - use masking functions.
-  - Use lazy formatting: `logger.debug("Value: %s", value)` instead of `logger.debug(f"Value: {value}")` for performance.
-- **Python Generator for Large Data**:
-  - Use generators (`yield`) instead of lists when processing large datasets.
-  - Example: `def read_large_file(): for line in f: yield line` instead of `return f.readlines()`.
-  - This prevents memory issues with large files or database results.
-- **Python Dictionary/List Comprehension**:
-  - Prefer comprehensions over loops for simple transformations.
-  - Example: `[x*2 for x in items]` is more Pythonic than `result = []; for x in items: result.append(x*2)`.
-  - But avoid complex nested comprehensions that harm readability.
-- **Python Context Manager for Custom Resources**:
-  - Classes managing resources (files, connections, locks) should implement `__enter__` and `__exit__`.
-  - Or use `@contextlib.contextmanager` decorator for simple cases.
-  - This ensures proper cleanup with `with` statement.
+## 问题类别分布
 
-## Execution
-Review the provided code or recent changes. Produce a **Review Report** categorizing issues as **Critical**, **Major**, or **Minor**. Provide specific code suggestions or diffs for every identified violation.
+> [!IMPORTANT]
+> 在执行审计前，阅读 `references/pattern-analysis.md` 获取详细的问题模式分析。
+
+| 类别 | 出现次数 | 优先级 | 说明 |
+|------|----------|--------|------|
+| **一致性性问题** | 128 | HIGH | 配置键名不匹配、命令格式不一致、文档与代码不符 |
+| **硬编码问题** | 103 | HIGH | 硬编码路径、阈值、密码 |
+| **配置问题** | 55 | HIGH | 配置缺失、配置键名不匹配、缺少依赖声明 |
+| **文档与实现不符** | 39 | MEDIUM | 脚本名称、功能描述、输出格式不一致 |
+| **密码/凭证安全** | 31 | CRITICAL | 明文密码、命令行密码、凭证文件 |
+| **阈值/常量问题** | 29 | MEDIUM | 魔法数字、重复阈值定义 |
+| **错误处理** | 26 | HIGH | 无错误消息、静默失败、验证无反馈 |
+| **命令注入风险** | 20 | CRITICAL | 字符串格式化命令、shell=True |
+| **JSON 生成问题** | 14 | CRITICAL | 尾部逗号、空值、未转义字符 |
+| **异常处理** | 12 | HIGH | 静默 pass、错误异常类型 |
+| **Shell 兼容性** | 8 | MEDIUM | Bashism、GNU 特定选项 |
+| **资源管理** | 7 | MEDIUM | 无 finally、无上下文管理器 |
+
+---
+
+## 审计工作流
+
+### Step 1: 确定审计范围
+
+**输入**: 用户指定的文件/目录，或当前工作目录
+
+**动作**:
+1. 扫描目标路径下的所有代码文件（`.py`, `.sh`, `.yaml`, `.md`）
+2. 统计文件数量，展示审计范围概览
+3. 创建工作区目录：`~/.moclaw/workspace/gemini-code-assist-check-<timestamp>/`
+
+---
+
+### Step 2: 执行审计检查
+
+按以下优先级顺序执行检查：
+
+#### 2.1 Critical 级别检查（阻断性问题）
+
+> [!CAUTION]
+> Critical 问题必须全部修复后才能合并。
+
+| 检查项 | 描述 | 检测模式 |
+|--------|------|----------|
+| **硬编码密码** | 代码中明文存储密码 | `password\s*=\s*['\"][^'\"]+['\"]` |
+| **命令注入风险** | 用户输入直接拼接到命令 | `format\([^)]*\)`, `f"[^"]*\{` |
+| **JSON 格式错误** | Shell 生成的 JSON 无效 | `echo.*,\s*$`, `"field":\s*,` |
+| **SSH 主机密钥验证禁用** | 中间人攻击风险 | `StrictHostKeyChecking\s*=\s*no` |
+| **SQL 注入风险** | 字符串拼接 SQL | `f"SELECT.*{` |
+
+#### 2.2 High 级别检查（功能性问题）
+
+> [!WARNING]
+> High 问题建议修复后再合并。
+
+| 检查项 | 描述 | 检测模式 |
+|--------|------|----------|
+| **静默异常处理** | `except.*: pass` 隐藏错误 | `except.*:\s*\n\s*pass` |
+| **配置键名不匹配** | YAML 和 Python 使用不同键名 | 需跨文件分析 |
+| **硬编码阈值** | 阈值在代码中而非配置中 | `> [0-9][0-9]` 无 config 引用 |
+| **命令行密码** | 密码在进程列表中可见 | `-W.*password`, `user/password@` |
+| **缺少依赖声明** | Python 包无 requirements.txt | `import (paramiko\|yaml)` 无 requirements.txt |
+| **SSH 输出编码** | 使用 sys.stdout.encoding 解码远程输出 | `sys\.stdout\.encoding.*decode` |
+| **路径计算不一致** | 相同功能使用不同路径计算方式 | `dirname.*dirname` vs `os.path.dirname` |
+| **JSON 换行符删除** | Shell 脚本中 `tr -d '\n'` 破坏多行数据 | `tr -d.*\\n.*json\|_json_escape.*tr -d` |
+
+#### 2.3 Medium 级别检查（维护性问题）
+
+| 检查项 | 描述 | 检测模式 |
+|--------|------|----------|
+| **文档与实现不符** | 文档描述与代码行为不一致 | 需人工验证 |
+| **.gitignore 重复** | 同一条目出现多次 | `sort \| uniq -d` |
+| **魔法数字** | 未命名的常量 | 上下文分析 |
+| **Shell 兼容性** | Bashism in POSIX | `^\[\[` with `#!/bin/sh` |
+| **警告输出到 stdout** | 警告应输出到 stderr | `print.*Warning.*\)` 无 `sys.stderr` |
+| **正则表达式位置** | 常量正则定义在函数内 | `def.*\n.*re.compile` |
+| **SQL 结果错误检查** | SQL 结果解析前未检查错误 | `sql_results.*get\(` 无 `ORA-` 检查 |
+| **df 输出解析健壮性** | split 无法处理文件系统名中的空格 | `split.*df\|df.*awk` |
+| **文件末尾换行符** | 文件末尾缺少换行符（违反 POSIX） | `tail -c 1 \| wc -l` |
+
+---
+
+### Step 3: 生成审计报告
+
+**输出格式**: Markdown 报告
+
+```markdown
+# Code Audit Report
+
+## Summary
+| Severity | Count | Action |
+|----------|-------|--------|
+| Critical | X | Must fix before merge |
+| High | X | Should fix |
+| Medium | X | Consider fixing |
+
+## Critical Issues
+### 1. [File:Line] Issue Title
+**Description**: ...
+**Code**:
+```language
+// problematic code
+```
+**Suggestion**:
+```language
+// fixed code
+```
+
+## High Issues
+...
+
+## Medium Issues
+...
+```
+
+---
+
+## 评论处理工作流
+
+> [!IMPORTANT]
+> 当收到 Gemini Code Assist 或其他评审者的评论时，遵循以下流程确保一次性解决问题。
+>
+> **阅读 `references/fix-verification-guide.md` 获取完整的修复验证指南。**
+
+### Step 1: 模式识别
+
+不要只关注评论指出的具体位置，要理解问题**模式**：
+
+| 评论示例 | 问题模式 | 需要搜索的位置 |
+|----------|----------|----------------|
+| "encoding missing at line 149" | **编码问题** | 所有 `open()`, `.decode()`, `.encode()` 调用 |
+| "dirname called 2 times, should be 3" | **路径计算问题** | 所有 `dirname`, `os.path.dirname` 调用 |
+| "hardcoded threshold 85" | **硬编码问题** | 所有阈值、魔法数字 |
+| "config key mismatch" | **配置键名问题** | YAML 和 Python 中的所有键名 |
+
+### Step 2: 全局搜索
+
+收到评论后，**必须**全局搜索同类问题：
+
+```bash
+# 编码问题
+grep -rn "sys.stdout.encoding" . --include="*.py"
+grep -rn "\.decode(" . --include="*.py"
+grep -rn "open(" . --include="*.py" | grep -v "encoding"
+
+# 路径计算问题
+grep -rn "dirname" . --include="*.py" --include="*.sh"
+grep -rn "os.path.dirname" . --include="*.py"
+
+# 配置键名问题
+grep -E "^\s+[a-z_]+:" config.yaml  # 获取所有 YAML 键名
+grep -rn "\.get\(['\"][a-z_]+['\"]" . --include="*.py"  # 获取所有代码引用
+```
+
+### Step 3: 批量修复
+
+一次性修复所有发现的同类问题，不要只修复评论指出的位置。
+
+**示例**：
+```
+评论指出: collector.py:149 encoding 问题
+
+全局搜索发现:
+- collector.py:149 - 需修复 ✅ 评论指出
+- collector.py:150 - 需修复 ✅ 同类问题
+- parser.py:361 - 已正确 ✅ 无需修改
+- generator.py:295 - 需修复 ✅ 同类问题
+```
+
+### Step 4: 验证修复
+
+修复后必须验证：
+
+1. **语法正确性**: `python -m py_compile <file>`
+2. **逻辑正确性**: 理解代码意图，验证修复方式正确（非"改了就行"）
+3. **完整性检查**: 再次全局搜索，确认无遗漏
+4. **一致性检查**: 确保其他位置的同类代码使用相同方式
+
+### Step 5: 回复评论
+
+回复时说明：
+- 具体修复内容（附带代码片段）
+- 是否同时修复了其他同类位置
+- 修复的 commit hash
+- 验证方法
+
+**回复模板**：
+```markdown
+Thank you for catching this. I have fixed the issue in commit <hash>.
+
+**The Fix:**
+<描述修复内容>
+
+**Code Change:**
+```python
+# Before
+<修复前代码>
+
+# After
+<修复后代码>
+```
+
+**Global Search:**
+I also searched for similar issues across the codebase:
+- `file1.py:123` - ✅ Already correct
+- `file2.py:456` - ✅ Fixed in this commit
+```
+
+### 常见错误
+
+| 错误类型 | 描述 | 预防措施 |
+|----------|------|----------|
+| **声称修复但未修复** | 回复说修复了，但代码未变更 | 修复前后都用 `git diff` 验证 |
+| **修复方式错误** | 修复了但方式不对 | 理解问题根因，验证逻辑正确性 |
+| **遗漏同类问题** | 只修复评论位置，遗漏其他 | 全局搜索 + 列出所有位置 |
+
+---
+
+## 审计规则详解
+
+### 规则 1: 一致性检查 (128 次出现)
+
+> [!IMPORTANT]
+> 一致性问题是 Gemini Code Assist 最常报告的问题类型 (17%)。
+
+**检查项**:
+
+#### 1.1 配置键名一致性
+
+```yaml
+# config.yaml
+collection_sql:
+  - key: "archive_dest"  # 键名
+```
+
+```python
+# parser.py - 必须匹配
+archive = data.get('sql_results', {}).get('archive_dest')  # ✅ 正确
+# archive = data.get('archive_status')  # ❌ 错误键名
+```
+
+#### 1.2 命令格式一致性
+
+```python
+# SSH 模式
+df_h_raw = run_remote(client, "df -Ph")
+
+# 离线模式 - 必须使用相同格式
+df -Ph  # ✅ 正确
+# df -P  # ❌ 格式不一致
+```
+
+---
+
+### 规则 2: 硬编码检查 (103 次出现)
+
+**检查项**:
+
+| 类型 | 示例 | 修复方案 |
+|------|------|----------|
+| 路径 | `/u01/app/oracle` | 使用 `{ORACLE_BASE}` 变量 |
+| 阈值 | `if pct > 85:` | 从 config.yaml 读取 |
+| 端口 | `port = 1521` | 使用环境变量或配置 |
+| 密码 | `password = "sys"` | 使用环境变量或 Wallet |
+
+---
+
+### 规则 3: JSON 安全性 (14 次出现)
+
+> 阅读 `references/json-safety-patterns.md` 获取完整指南。
+
+**问题模式**:
+
+```bash
+# ❌ 错误 - 尾部逗号
+echo "  \"key\": \"value\","
+echo "}"
+
+# ✅ 正确 - prefix-comma 模式
+FIRST=1
+for item in $items; do
+    if [ $FIRST -eq 1 ]; then
+        echo "  \"$item\""
+        FIRST=0
+    else
+        echo "  ,\"$item\""
+    fi
+done
+```
+
+```bash
+# ❌ 错误 - 空值导致无效 JSON
+echo "\"count\": $COUNT,"
+# 如果 COUNT 为空: "count": ,
+
+# ✅ 正确 - 使用默认值
+echo "\"count\": ${COUNT:-0},"
+```
+
+---
+
+### 规则 4: 异常处理可见性 (12 次出现)
+
+> 阅读 `references/exception-handling-guide.md` 获取完整指南。
+
+**问题模式**:
+
+```python
+# ❌ 错误 - 静默吞掉所有异常
+except Exception:
+    pass
+
+# ✅ 正确 - 打印警告信息
+except Exception as e:
+    print(f"Warning: Operation failed: {e}")
+```
+
+---
+
+### 规则 5: 命令注入防护 (20 次出现)
+
+**问题模式**:
+
+```python
+# ❌ 错误 - 用户输入直接格式化到命令
+cmd = f"ls {user_input}"
+subprocess.run(cmd, shell=True)
+
+# ✅ 正确 - 使用列表形式
+subprocess.run(["ls", user_input])
+
+# ✅ 正确 - 或使用 shlex.quote()
+import shlex
+subprocess.run(f"ls {shlex.quote(user_input)}", shell=True)
+```
+
+---
+
+### 规则 6: 密码安全 (31 次出现)
+
+**问题模式**:
+
+```bash
+# ❌ 错误 - 密码在命令行可见
+sqlplus sys/password@host:1521/orcl
+
+# ✅ 正确 - 通过 stdin 传递密码
+echo "$PASSWORD" | sqlplus sys@host:1521/orcl as sysdba
+```
+
+```python
+# ❌ 错误 - 硬编码密码
+password = "oracle123"
+
+# ✅ 正确 - 从环境变量获取
+import os
+password = os.environ.get("ORACLE_PASSWORD")
+```
+
+---
+
+### 规则 7: JSON 换行符处理 (新增)
+
+**问题模式**:
+
+```bash
+# ❌ 错误 - tr -d '\n' 删除换行符，破坏多行数据
+_json_escape() {
+    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | tr -d '\n'
+}
+
+# ✅ 正确 - 转义换行符为 \n
+_json_escape() {
+    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\n/\\n/g'
+}
+```
+
+**影响**: 多行 SQL 结果（如 `fra_status`, `archive_dest`）会被破坏。
+
+---
+
+### 规则 8: 警告输出流 (新增)
+
+**问题模式**:
+
+```python
+# ❌ 错误 - 警告输出到 stdout
+print(f"Warning: Could not parse line: '{line}'")
+
+# ✅ 正确 - 警告输出到 stderr
+import sys
+print(f"Warning: Could not parse line: '{line}'", file=sys.stderr)
+```
+
+**原因**: 分离标准输出和错误/警告信息流，便于日志处理和管道操作。
+
+---
+
+### 规则 9: 正则表达式位置 (新增)
+
+**问题模式**:
+
+```python
+# ❌ 错误 - 正则表达式定义在函数内部
+def main():
+    _SID_RE = re.compile(r'^[A-Za-z0-9_]{1,30}$')
+    # ...
+
+# ✅ 正确 - 正则表达式定义在模块级别
+_SID_RE = re.compile(r'^[A-Za-z0-9_]{1,30}$')
+
+def main():
+    # ...
+```
+
+**原因**: 模块级常量更清晰，避免每次函数调用重新编译。
+
+---
+
+### 规则 10: SQL 结果错误检查 (新增)
+
+**问题模式**:
+
+```python
+# ❌ 错误 - 直接解析 SQL 结果，未检查错误
+fra_raw = data.get('sql_results', {}).get('fra_status', '')
+if fra_raw:
+    lines = fra_raw.strip().split('\n')
+    # 直接开始解析，如果 SQL 失败会尝试解析错误消息
+
+# ✅ 正确 - 先检查 SQL 错误，再解析
+fra_raw = data.get('sql_results', {}).get('fra_status', '')
+if fra_raw:
+    # 检查 SQL 错误（与 archive_dest 处理方式一致）
+    if any(err in fra_raw.upper() for err in ['ERROR', 'ORA-', 'CANNOT']):
+        risks.append({'level': 'Warning', 'item': 'FRA Status Query Error',
+                      'value': fra_raw[:80], 'threshold': 'No error'})
+    else:
+        lines = fra_raw.strip().split('\n')
+        # 继续解析...
+```
+
+**检查项**:
+
+| SQL 结果键名 | 是否需要错误检查 | 说明 |
+|--------------|------------------|------|
+| `fra_status` | ✅ 需要 | 解析数值，计算使用率 |
+| `archive_dest` | ✅ 需要 | 已有错误检查 |
+| `fra_path` | ❌ 不需要 | 仅用于路径替换 |
+| `adr_home` | ❌ 不需要 | 仅用于路径替换 |
+| `db_unique_name` | ❌ 不需要 | 简单字符串值 |
+
+**一致性原则**: 所有需要解析并产生风险的 SQL 结果，都应先检查错误。
+
+**检测模式**:
+```bash
+# 查找所有 SQL 结果引用
+grep -rn "sql_results.*get\(" . --include="*.py"
+
+# 查找已有错误检查的
+grep -rn "ORA-\|ERROR.*sql_results" . --include="*.py"
+```
+
+---
+
+### 规则 11: df 输出解析健壮性 (新增)
+
+**问题模式**:
+
+```python
+# ❌ 错误 - split 无法处理文件系统名中的空格
+parts = line.split(None, 5)
+if len(parts) == 6:
+    rows.append({'filesystem': parts[0], ...})
+
+# ✅ 正确 - 使用正则表达式
+import re
+_DF_PATTERN = re.compile(
+    r'^(?P<filesystem>.+?)\s+(?P<size>\S+)\s+(?P<used>\S+)\s+(?P<avail>\S+)\s+(?P<pct>\S+%?)\s+(?P<mount>.+)$'
+)
+match = _DF_PATTERN.match(line.strip())
+if match:
+    rows.append(match.groupdict())
+```
+
+```bash
+# ❌ 错误 - awk 假设 $1 是完整 filesystem 名
+df -Ph | awk '{print $1}'  # 如果 filesystem 是 "My FS"，只得到 "My"
+
+# ✅ 正确 - 使用 perl 正则表达式
+df -Ph | perl -ne 'if (/^(.+?)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+%?)\s+(.+)$/) { ... }'
+```
+
+**触发场景**:
+- 网络挂载点名称含空格（如 `//server/share name`）
+- 某些卷管理器配置
+- 生产环境罕见，但理论上可能发生
+
+**检测模式**:
+```bash
+# 查找 awk 解析 df 的代码
+grep -rn "df.*awk" . --include="*.sh" --include="*.py"
+
+# 查找 split 解析 df 的代码
+grep -rn "split.*df\|df.*split" . --include="*.py"
+```
+
+---
+
+### 规则 12: 文件末尾换行符 (新增)
+
+**问题模式**:
+
+```bash
+# ❌ 错误 - 文件末尾没有换行符
+$ cat file.txt
+line1
+line2$  # 光标在行尾，无换行
+
+# ✅ 正确 - POSIX 标准要求文本文件以换行符结尾
+$ cat file.txt
+line1
+line2
+$  # 光标在新行
+```
+
+**影响**:
+- 某些工具可能不正确处理最后一行
+- POSIX 标准要求文本文件以换行符结尾
+- Git diff 显示 "No newline at end of file"
+
+**检测模式**:
+```bash
+# 检测文件末尾是否有换行符
+for f in $(find . -type f \( -name "*.py" -o -name "*.sh" -o -name "*.json" -o -name "*.md" -o -name "*.yaml" -o -name "*.txt" \)); do
+    if [ -f "$f" ] && [ "$(tail -c 1 "$f" | wc -l)" -eq 0 ]; then
+        echo "Missing newline: $f"
+    fi
+done
+```
+
+**修复方法**:
+```bash
+# 添加末尾换行符
+echo "" >> file.txt
+```
+
+---
+
+## 快速审计脚本
+
+```bash
+#!/bin/bash
+# 快速审计 - 检测常见问题
+
+TARGET="${TARGET_PATH:-.}"
+
+echo "=== Gemini Code Assist Quick Audit ==="
+
+# Critical: JSON 格式
+echo "Checking JSON safety..."
+grep -rn 'echo.*,\s*$' "$TARGET" --include="*.sh"
+grep -rn '"[^"]*":\s*,' "$TARGET" --include="*.sh"
+
+# Critical: 硬编码密码
+echo "Checking hardcoded passwords..."
+grep -rn "password\s*=\s*['\"][^'\"]*['\"]" "$TARGET" --include="*.py"
+
+# Critical: JSON 换行符处理
+echo "Checking JSON newline handling..."
+grep -rn "tr -d.*\\\\n.*json" "$TARGET" --include="*.sh"
+grep -rn "_json_escape.*tr -d" "$TARGET" --include="*.sh"
+
+# High: 静默异常
+echo "Checking silent exceptions..."
+grep -rnP 'except\s+\w+.*:\s*\n\s*pass' "$TARGET" --include="*.py"
+
+# High: JSON 换行符删除
+echo "Checking tr -d '\n' in JSON context..."
+grep -rn "tr -d.*\\n" "$TARGET" --include="*.sh" | grep -i json
+
+# Medium: df 解析健壮性
+echo "Checking df parsing robustness..."
+grep -rn "df.*awk" "$TARGET" --include="*.sh" --include="*.py"
+grep -rn "split.*df\|df.*split" "$TARGET" --include="*.py"
+
+# Medium: .gitignore 重复
+echo "Checking .gitignore duplicates..."
+sort .gitignore | uniq -d
+
+# Medium: 文件末尾换行符
+echo "Checking trailing newlines..."
+for f in $(find "$TARGET" -type f \( -name "*.py" -o -name "*.sh" -o -name "*.json" -o -name "*.md" -o -name "*.yaml" -o -name "*.txt" \)); do
+    if [ -f "$f" ] && [ "$(tail -c 1 "$f" | wc -l)" -eq 0 ]; then
+        echo "Missing newline: $f"
+    fi
+done
+```
+
+---
+
+## 报告规范
+
+审计报告必须包含：
+
+1. **执行摘要** - 问题总数、各级别数量、审计范围
+2. **Critical 问题详情** - 文件路径、行号、问题描述、修复建议代码
+3. **High 问题详情** - 同上格式
+4. **Medium 问题详情** - 可简化展示
+5. **统计数据** - 扫描文件数、分析行数、应用检查数
+6. **通过项列表** - 已验证无问题的检查项
+
+---
+
+## 安全
+
+- 审计过程只读取文件，不修改任何代码
+- 报告中如发现凭证明文，必须掩码显示
+- 生成的报告保存在工作区目录，不污染源代码目录
+
+---
+
+## 附录: 最常见的 Gemini Code Assist 评论
+
+### Critical 级别
+
+```
+"Hardcoded password in plain text"
+"Command injection vulnerability"
+"Invalid JSON - trailing comma"
+"SSH host key verification disabled"
+```
+
+### High 级别
+
+```
+"except Exception: pass silently swallows errors"
+"Configuration key mismatch between YAML and Python"
+"Hardcoded threshold should be in config"
+"Password exposed in command line arguments"
+```
+
+### Medium 级别
+
+```
+"Documentation inconsistent with implementation"
+"Duplicate entry in .gitignore"
+"Magic number should be extracted to constant"
+"Consider using more specific exception type"
+```
