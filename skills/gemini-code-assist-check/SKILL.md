@@ -111,7 +111,7 @@ files:
 
 | 检查项 | 描述 | 检测模式 |
 |--------|------|----------|
-| **静默异常处理** | `except.*: pass` 隐藏错误 | `except.*:\s*\n\s*pass` |
+| **静默异常处理** | `except` 后无错误日志，静默吞掉异常 | 见下方详细检测脚本 |
 | **配置键名不匹配** | YAML 和 Python 使用不同键名 | 需跨文件分析 |
 | **硬编码阈值** | 阈值在代码中而非配置中 | `> [0-9][0-9]` 无 config 引用 |
 | **命令行密码** | 密码在进程列表中可见 | `-W.*password`, `user/password@` |
@@ -119,6 +119,25 @@ files:
 | **SSH 输出编码** | 使用 sys.stdout.encoding 解码远程输出 | `sys\.stdout\.encoding.*decode` |
 | **路径计算不一致** | 相同功能使用不同路径计算方式 | `dirname.*dirname` vs `os.path.dirname` |
 | **JSON 换行符删除** | Shell 脚本中 `tr -d '\n'` 破坏多行数据 | `tr -d.*\\n.*json\|_json_escape.*tr -d` |
+
+> [!IMPORTANT]
+> **静默异常处理检测详解**
+>
+> 问题模式不止 `except: pass`，还包括：
+> - `except Exception: return "Unknown"` — 返回值但无日志
+> - `except Exception as e:` 但未打印 `e` 到 stderr
+> - `except Exception:` 后接任何非日志语句
+>
+> **检测脚本**（需使用 grep -P 支持多行匹配）：
+> ```bash
+> # 检测所有 except Exception 后接非日志语句的情况
+> grep -rnP 'except\s+(Exception|\w+).*:\s*\n\s*(?!print.*file=sys\.stderr|logging\.)[^\n]*(return|pass|=)' --include="*.py"
+> ```
+>
+> **手动验证步骤**：
+> 1. 搜索所有 `except Exception` 出现位置
+> 2. 检查每个位置是否有 `print(..., file=sys.stderr)` 或日志输出
+> 3. 确认 `as e` 是否被使用
 
 #### 2.3 Medium 级别检查（维护性问题）
 
@@ -355,21 +374,60 @@ echo "\"count\": ${COUNT:-0},"
 
 ---
 
-### 规则 4: 异常处理可见性 (12 次出现)
+### 规则 4: 异常处理可见性 (12+ 次出现)
 
 > 阅读 `references/exception-handling-guide.md` 获取完整指南。
 
-**问题模式**:
+> [!IMPORTANT]
+> **此问题在 PR 中反复出现。修复时必须全局搜索所有 `except Exception` 位置，一次性修复所有同类问题。**
+
+**问题模式（全部需要修复）**:
 
 ```python
-# ❌ 错误 - 静默吞掉所有异常
+# ❌ 模式 A - 静默 pass
 except Exception:
     pass
 
-# ✅ 正确 - 打印警告信息
+# ❌ 模式 B - 静默返回值（无日志）
+except Exception:
+    return "Unknown"
+
+# ❌ 模式 C - 有 as e 但未打印
 except Exception as e:
-    print(f"Warning: Operation failed: {e}")
+    return "Unknown"  # e 未被使用
+
+# ❌ 模式 D - 打印到 stdout（应为 stderr）
+except Exception as e:
+    print(f"Warning: {e}")  # 缺少 file=sys.stderr
+
+# ✅ 正确模式 - 打印警告到 stderr
+import sys
+except Exception as e:
+    print(f"Warning: Operation failed: {e}", file=sys.stderr)
+    return "Unknown"  # 可选：返回默认值
 ```
+
+**检测步骤**:
+
+```bash
+# Step 1: 找出所有 except Exception 位置
+grep -rn "except Exception" . --include="*.py"
+
+# Step 2: 检查每个位置是否有正确的错误日志
+# 正确的代码包含: print(..., file=sys.stderr) 或 logging.error/warning
+
+# Step 3: 确认 as e 是否存在
+grep -rn "except Exception:" . --include="*.py"  # 无 as e - 可能有问题
+grep -rn "except Exception as e:" . --include="*.py"  # 有 as e - 检查是否打印
+```
+
+**常见错误**:
+
+| 错误 | 描述 | 修复 |
+|------|------|------|
+| 只修复评论位置 | 遗漏其他同类问题 | 全局搜索后列出所有位置 |
+| 添加 as e 但未打印 | 形式上修复但无实际日志 | 必须添加 print(..., file=sys.stderr) |
+| 打印到 stdout | 日志与正常输出混杂 | 使用 file=sys.stderr |
 
 ---
 
@@ -627,8 +685,15 @@ echo "Checking JSON newline handling..."
 grep -rn "tr -d.*\\\\n.*json" "$TARGET" --include="*.sh"
 grep -rn "_json_escape.*tr -d" "$TARGET" --include="*.sh"
 
-# High: 静默异常
+# High: 静默异常（全面检测）
 echo "Checking silent exceptions..."
+echo "  [1] 查找所有 except Exception 位置..."
+grep -rn "except Exception" "$TARGET" --include="*.py"
+echo "  [2] 查找无 as e 的..."
+grep -rn "except Exception:" "$TARGET" --include="*.py"
+echo "  [3] 查找有 as e 但可能未打印的..."
+grep -rn "except Exception as e:" "$TARGET" --include="*.py"
+echo "  [4] 查找 pass 隐藏错误的..."
 grep -rnP 'except\s+\w+.*:\s*\n\s*pass' "$TARGET" --include="*.py"
 
 # High: JSON 换行符删除
@@ -691,6 +756,8 @@ done
 
 ```
 "except Exception: pass silently swallows errors"
+"except Exception: return 'Unknown' without logging the error"
+"The broad except Exception clause silently swallows all errors, returning 'Unknown' without any indication of what went wrong"
 "Configuration key mismatch between YAML and Python"
 "Hardcoded threshold should be in config"
 "Password exposed in command line arguments"
