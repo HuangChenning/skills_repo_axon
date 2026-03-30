@@ -68,7 +68,9 @@ files:
 | **错误处理** | 26 | HIGH | 无错误消息、静默失败、验证无反馈 |
 | **命令注入风险** | 20 | CRITICAL | 字符串格式化命令、shell=True |
 | **JSON 生成问题** | 14 | CRITICAL | 尾部逗号、空值、未转义字符 |
+| **Heredoc 安全** | 5+ | CRITICAL | 非引用 heredoc 允许变量扩展 |
 | **异常处理** | 12 | HIGH | 静默 pass、错误异常类型 |
+| **代码重复** | 10+ | MEDIUM | 相似 if 语句、可数据驱动的逻辑 |
 | **Shell 兼容性** | 8 | MEDIUM | Bashism、GNU 特定选项 |
 | **资源管理** | 7 | MEDIUM | 无 finally、无上下文管理器 |
 
@@ -103,6 +105,49 @@ files:
 | **JSON 格式错误** | Shell 生成的 JSON 无效 | `echo.*,\s*$`, `"field":\s*,` |
 | **SSH 主机密钥验证禁用** | 中间人攻击风险 | `StrictHostKeyChecking\s*=\s*no` |
 | **SQL 注入风险** | 字符串拼接 SQL | `f"SELECT.*{` |
+| **非引用 Heredoc 安全风险** | Shell 脚本中 `<<EOF` 允许变量扩展 | 见下方详细说明 |
+
+> [!IMPORTANT]
+> **非引用 Heredoc 安全检测详解**
+>
+> Shell 中 heredoc 有两种形式：
+> - `<<EOF` — **非引用**，允许变量扩展（有安全风险）
+> - `<<'EOF'` — **引用**，禁止变量扩展（安全）
+>
+> **问题模式**：
+> ```bash
+> # ❌ 危险 - 非引用 heredoc，$query 会被 shell 展开
+> local val=$(sqlplus -S / as sysdba <<EOF
+> set heading on
+> $query
+> exit
+> EOF
+> )
+> ```
+>
+> **安全方案**：
+> ```bash
+> # ✅ 方案1 - 使用引用 heredoc
+> local val=$(sqlplus -S / as sysdba <<'EOF'
+> set heading on
+> $query
+> exit
+> EOF
+> )
+>
+> # ✅ 方案2 - 使用 printf 管道（推荐）
+> local val=$(printf "set heading on\n%s\nexit\n" "$query" | sqlplus -S / as sysdba)
+> ```
+>
+> **检测模式**：
+> ```bash
+> # 查找非引用 heredoc
+> grep -rn '<<EOF' . --include="*.sh"
+> grep -rn '<<\s*EOF' . --include="*.sh"
+>
+> # 排除引用 heredoc
+> grep -rn "<<'EOF'" . --include="*.sh"
+> ```
 
 #### 2.2 High 级别检查（功能性问题）
 
@@ -144,6 +189,7 @@ files:
 | 检查项 | 描述 | 检测模式 |
 |--------|------|----------|
 | **文档与实现不符** | 文档描述与代码行为不一致 | 需人工验证 |
+| **重复代码模式** | 相似的 if/条件判断重复多次 | 见下方详细说明 |
 | **.gitignore 重复** | 同一条目出现多次 | `sort \| uniq -d` |
 | **魔法数字** | 未命名的常量 | 上下文分析 |
 | **Shell 兼容性** | Bashism in POSIX | `^\[\[` with `#!/bin/sh` |
@@ -152,6 +198,46 @@ files:
 | **SQL 结果错误检查** | SQL 结果解析前未检查错误 | `sql_results.*get\(` 无 `ORA-` 检查 |
 | **df 输出解析健壮性** | split 无法处理文件系统名中的空格 | `split.*df\|df.*awk` |
 | **文件末尾换行符** | 文件末尾缺少换行符（违反 POSIX） | `tail -c 1 \| wc -l` |
+
+> [!NOTE]
+> **重复代码模式检测详解**
+>
+> 当多个 `if` 语句具有相似的结构和操作时，应考虑使用数据驱动方式重构。
+>
+> **问题模式**（重复 if 语句）：
+> ```python
+> # ❌ 代码重复 - 5 个相似的 if 语句
+> if name == 'listener' and size_gb > thresholds.get('listener_log_max_gb', 2):
+>     risks.append({'level': 'Warning', 'item': 'Listener Log Size', ...})
+> if name == 'adr_home' and size_gb > thresholds.get('adr_home_max_gb', 5):
+>     risks.append({'level': 'Warning', 'item': 'ADR Home Size', ...})
+> if name == 'fra' and size_gb > thresholds.get('fra_max_gb', 50):
+>     risks.append({'level': 'Warning', 'item': 'FRA Directory Size', ...})
+> # ... 更多重复
+> ```
+>
+> **推荐方案**（数据驱动）：
+> ```python
+> # ✅ 数据驱动 - 配置字典 + 循环
+> DIR_THRESHOLDS = {
+>     'listener': ('Listener Log Size', 'listener_log_max_gb', 2),
+>     'adr_home': ('ADR Home Size', 'adr_home_max_gb', 5),
+>     'fra': ('FRA Directory Size', 'fra_max_gb', 50),
+> }
+>
+> if name in DIR_THRESHOLDS:
+>     item_name, key, default = DIR_THRESHOLDS[name]
+>     if size_gb > thresholds.get(key, default):
+>         risks.append({'level': 'Warning', 'item': item_name, ...})
+> ```
+>
+> **检测方法**：
+> - 人工审查：查找连续 3+ 个结构相似的 `if` 语句
+> - 模式匹配：`if name == 'xxx' and ...: risks.append` 出现多次
+>
+> **判断标准**：
+> - 功能正确时，重构是可选的（不影响功能）
+> - 新增阈值时，数据驱动方式更易维护
 
 ---
 
@@ -685,6 +771,15 @@ echo "Checking JSON newline handling..."
 grep -rn "tr -d.*\\\\n.*json" "$TARGET" --include="*.sh"
 grep -rn "_json_escape.*tr -d" "$TARGET" --include="*.sh"
 
+# Critical: 非引用 Heredoc 安全风险
+echo "Checking unquoted heredoc..."
+echo "  [1] 查找所有 <<EOF (非引用)..."
+grep -rn '<<EOF' "$TARGET" --include="*.sh" 2>/dev/null || echo "    None found"
+echo "  [2] 对比引用 heredoc <<'EOF'..."
+grep -rn "<<'EOF'" "$TARGET" --include="*.sh" 2>/dev/null || echo "    None found"
+echo "  [3] 检查 heredoc 内是否有变量..."
+grep -rnP '<<EOF.*\n.*\$\w+' "$TARGET" --include="*.sh" 2>/dev/null || echo "    None with variables"
+
 # High: 静默异常（全面检测）
 echo "Checking silent exceptions..."
 echo "  [1] 查找所有 except Exception 位置..."
@@ -750,6 +845,7 @@ done
 "Command injection vulnerability"
 "Invalid JSON - trailing comma"
 "SSH host key verification disabled"
+"The collect_sql function uses a non-quoted heredoc (<<EOF), which allows shell expansion of the $query variable"
 ```
 
 ### High 级别
@@ -767,6 +863,8 @@ done
 
 ```
 "Documentation inconsistent with implementation"
+"The checks for directory size thresholds are implemented as a series of if statements. This pattern leads to code duplication and can be made more maintainable by using a data-driven approach"
+"Duplicate entry in .gitignore"
 "Duplicate entry in .gitignore"
 "Magic number should be extracted to constant"
 "Consider using more specific exception type"
