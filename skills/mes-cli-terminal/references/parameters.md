@@ -11,11 +11,11 @@
   - `history create`
   - `request list|view|report|reply|recover|edit`
 - `mes plan`
-  - `list`, `view`, `save`, `create`, `edit`, `end`, `delete`
+  - `list`, `view`, `end`
 - `mes article`
   - `list`, `view`, `save`, `delete`, `assign-reviewer`, `set-level`, `set-type`, `review-count`
 - `mes contract`
-  - `list`, `view`
+  - `list`, `list-items`, `view`
 - `mes dashboard`
   - `base`
   - `contract`
@@ -29,6 +29,8 @@
   - `parse-support-url`
   - `search-user`
   - `search-company`
+- `mes oss`
+  - `upload image`
 
 ## Full parameter reference (agent-facing)
 
@@ -63,26 +65,26 @@
 ### `mes statistics`
 
 - `statistics add`
+  - `--type` **（必填，0=服务请求, 1=实施计划, 3=内部事项）**
+  - `--rid` **（必填，或用 --from-url）**
+  - `--start` **（必填，YYYY-MM-DD HH:mm:ss，不能跨天）**
+  - `--end` **（必填，YYYY-MM-DD HH:mm:ss，不能跨天）**
+  - `--hours` **（必填，最小0.5，最大24）**
+  - `--remark` **（必填，最少10字）**
+  - `--overtime-type`（`null|0=工作日加班 1=休息日加班 2=节假日加班`，默认 null 非加班）
+  - `--from-url`（自动解析 type 和 rid）
   - `--title`
-  - `--type`（0=服务请求, 1=计划任务, 3=内部事项）
-  - `--service-type`
-  - `--rid`
   - `--company-id`
   - `--executor-id`
   - `--acc-id`
-  - `--start`
-  - `--end`
-  - `--hours`
-  - `--remark`
   - `--list-title`
-  - `--from-url`
   - `--dry-run`
   - `--json`
 - `statistics update <id>`
   - `--user-id`
   - `--calendar-from`, `--calendar-to`
   - `--patch-file`, `--patch-json`
-  - `--task-time`
+  - `--task-time` (min 0.5, max 24)
   - `--remark`
   - `--start`, `--end`
   - `--title`
@@ -144,15 +146,16 @@
 ### `mes service`
 
 - `service create`
-  - `--title`
-  - `--body-html` / `--body-html-file`（互斥）
+  - `--title` **（必填）**
+  - `--company-id` **（必填）**
+  - `--acc-id` **（必填，内部用户）**
+  - `--type` **（必填，P0-P5，默认3）**
+  - `--body-md` / `--body-html` **（必填，推荐优先使用 --body-md）**
+  - `--body-html-file`
   - `--attach-url`（可重复）
   - `--mode contract|asset`
-  - `--company-id`
-  - `--acc-id`
   - `--contract-id`
   - `--asset-id`
-  - `--type`
   - `--recover-type`
   - `--menu-id`
   - `--team-id`
@@ -188,28 +191,28 @@
 
 `--status` 参数用于筛选服务请求的状态，支持数字/中文名称：
 
-| 代码 | 状态描述 |
-| ---- | -------- |
-| -1   | 初始化 |
-| 0    | 已提交 |
-| 1    | 处理中 |
-| 2    | 已关闭 |
-| 3    | 已归档 |
-| 4    | 待反馈 |
+| 代码 | 状态描述   |
+| ---- | ---------- |
+| -1   | 初始化     |
+| 0    | 已提交     |
+| 1    | 处理中     |
+| 2    | 已关闭     |
+| 3    | 已归档     |
+| 4    | 待反馈     |
 | 5    | 业务已恢复 |
 
 #### type 等级字典
 
 `--level`/`--min-level` 参数用于筛选服务请求的等级，支持数字/P0-P5：
 
-| 代码 | 等级 | 描述 |
-| ---- | ---- | ---- |
-| 4 | P0 | 我方误操作致业务不可用 |
-| 2 | P1 | 核心业务完全不可用（关键业务受影响）|
-| 1 | P2 | 非核心业务完全不可用（非关键业务受到影响）|
-| 0 | P3 | 部分业务模块不可用（一般故障不影响业务）|
-| 3 | P4 | 咨询，业务暂未受影响（技术咨询）|
-| 5 | P5 | 问题原因分析 |
+| 代码 | 等级 | 描述                                       |
+| ---- | ---- | ------------------------------------------ |
+| 4    | P0   | 我方误操作致业务不可用                     |
+| 2    | P1   | 核心业务完全不可用（关键业务受影响）       |
+| 1    | P2   | 非核心业务完全不可用（非关键业务受到影响） |
+| 0    | P3   | 部分业务模块不可用（一般故障不影响业务）   |
+| 3    | P4   | 咨询，业务暂未受影响（技术咨询）           |
+| 5    | P5   | 问题原因分析                               |
 
 - `service request list`
   - `--unclosed`
@@ -261,7 +264,7 @@
 
 #### check-type 字典
 
-`--check-type` 参数用于指定计划任务的类型，支持数字 0-6：
+`--check-type` 参数用于指定实施计划的类型，支持数字 0-6：
 
 | 数字 | 中文类型 | 常见叫法/说明                    |
 | ---- | -------- | -------------------------------- |
@@ -287,13 +290,13 @@
 
 #### status 状态字典
 
-`--status` 参数用于筛选计划任务的状态，支持数字 0-3：
+`--status` 参数用于筛选实施计划的状态，支持数字 0-3：
 
-| 数字 | 状态描述 | 说明 |
-| ---- | -------- | ----|
-| 0    | 未开始   | 计划尚未开始执行 |
-| 1    | 进行中   | 计划正在执行中 |
-| 2    | 结束     | 计划已经结束完成 |
+| 数字 | 状态描述     | 说明                         |
+| ---- | ------------ | ---------------------------- |
+| 0    | 未开始       | 计划尚未开始执行             |
+| 1    | 进行中       | 计划正在执行中               |
+| 2    | 结束         | 计划已经结束完成             |
 | 3    | 已逾期未结束 | 计划已超过结束日期但仍未结束 |
 
 **自然语言映射规则：**
@@ -308,7 +311,6 @@
 #### 子命令参数
 
 - `plan list`
-  - `--new-api`
   - `--page`, `--page-size`
   - `--title` (按标题关键词模糊搜索，支持部分匹配)
   - `--company-name`
@@ -325,29 +327,9 @@
   - `--json`
 - `plan view <id>`
   - `--json`
-- `plan save`
-  - `--body-file`
-  - `--json`
-- `plan create`
-  - `--title`
-  - `--company-id`（`check-type=6` 可自动）
-  - `--check-type`
-  - `--acc-id`
-  - `--start-date`, `--end-date`
-  - `--deliver`
-  - `--ignore-weekend`
-  - `--external-id`
-  - `--executor-json`（与下一组二选一）
-  - `--executor-id`, `--executor-name`, `--task-time`, `--remarks`
-  - `--json`
-- `plan edit <id>`
-  - `--patch-file` / `--patch-json`
-  - `--json`
 - `plan end <id>`
   - `--score`
   - `--feedback`
-  - `--json`
-- `plan delete <id>`
   - `--json`
 
 ### `mes article`
@@ -364,25 +346,44 @@
   - `--json`
 - `article view <id>`
   - `--json`
-- `article save`
+- `article create`
+  - `--title` **（必填）**
+  - `--content-md` **（必填，与 --content 二选一）**
+  - `--tags` **（必填，逗号分隔）**
+  - `--menu-id`（默认 505）
+  - `--status`（默认 1=已发布）
+  - `--difficult-level`（默认 0）
+  - `--content`（与 --content-md 二选一）
+  - `--content-md-file`（从文件读取 content-md，与 --content-md 二选一）
   - `--body-file`
-  - `--id`
-  - `--title`
-  - `--menu-id`
-  - `--status`
-  - `--type`
+  - `--type`（0=知识库文章, 1=最新咨询, 2=安全警告, 3=其他, 4=版本发布, 5=最佳实践, 6=产品公告, 7=服务报告）
   - `--encrypt-level`
-  - `--difficult-level`
   - `--source`
   - `--version`
   - `--platform`
   - `--brief`
   - `--evaluate`
-  - `--fault-id`
-  - `--tags`
+  - `--sr-id`（传入时自动设置 type=7, encrypt-level=INTERNAL, menu-id=505）
+  - `--json`
+- `article update`
+  - `--id` **（必填，必须 > 0）**
+  - `--title`
   - `--content-md`
-  - `--content-md-file`
+  - `--tags`
+  - `--menu-id`
+  - `--status`
+  - `--difficult-level`
   - `--content`
+  - `--content-md-file`
+  - `--body-file`
+  - `--type`
+  - `--encrypt-level`
+  - `--source`
+  - `--version`
+  - `--platform`
+  - `--brief`
+  - `--evaluate`
+  - `--sr-id`（传入时自动设置 type=7, encrypt-level=INTERNAL, menu-id=505）
   - `--json`
 - `article delete <id>`
   - `--json`
@@ -406,7 +407,7 @@
 
 - `contract list`
   - `--page`, `--page-size`
-  - `--search`
+  - `--search`（合同名称/合同编号，模糊匹配，不区分大小写）
   - `--owner-id`
   - `--type`
   - `--period-type`（默认 `0`，仅查询服务中/有效期内的合同；传空值可查询全部合同）
@@ -419,7 +420,7 @@
 - `contract list-items`
   - `--company-id` (optional)
   - `--contract-id` (optional)
-  - `--contract-num` (optional)
+  - `--contract-num` (optional) - Exact match searching by contract number
   - `--item-type` - Filter by itemType, e.g. 一般维保
   - `--date-range-start`, `--date-range-end` - both item start and end must be in range
   - `--min-progress-ratio`, `--max-progress-ratio` - Filter by actualHours/planHour
@@ -461,12 +462,18 @@
 - `util search-company <keyword>`
   - 通过公司名称关键字搜索公司，返回 companyID、companyName，支持 `-o json` 输出
 
+### `mes oss`
+
+- `oss upload image <file-path>`
+  - `<file-path>` (Argument, Required): 磁盘上的本地图片文件路径
+  - `-o json`: 显示完整元数据（location, name, size, ext）
+  - **⚠️ 注意**：目前**仅支持图片**。不支持上传附件、文档或压缩包。上传非图片文件可能导致后端报错或处理异常。
+
 ### Parameter completion rules for agent
 
+- 创建服务请求（service create）时，优先选择 `--body-md` 传入 Markdown 格式的正文，而非 `--body-html`。使用 Markdown 可以更好地处理代码块、列表和格式化内容。
 - `service request list` 的 JSON：统计「负责人」用 `executorEmployeeName`（真实姓名），不要用 `executorName` 代替；后者可为登录名。
 - 用户给 URL（plan/request）时，优先 `--from-url`，避免手工错填 `type/rid`。
 - `statistics add` 若无交互必须带齐：`--start --end --hours --remark` + 关联参数。
 - `service history create` 易漏：`--handle-over-time --happen-time --created-time --team-id --executor-id`。
-- `plan create` 易漏：`--check-type --start-date --end-date` 和处理人信息。
 - 周报 create/update 正文三选一：`--md` / `--md-file` / `--html`（避免同时给）。
-- 查询场景默认 `-o json`；写场景默认先 `--dry-run`（若支持）。
