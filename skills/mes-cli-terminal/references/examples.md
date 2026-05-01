@@ -34,13 +34,12 @@
 - "列出我的未关闭工单"  
   `mes -o json service request list --status 1 --person-id <uid>`
 - "搜索标题包含 'Oracle' 的服务请求"  
-  `mes -o json service request list --title "Oracle"`
+  `mes -o json service request list Oracle`  
+  （等效于 `mes -o json service request list --title "Oracle"`）
 - "看工单 123 详情"  
   `mes -o json service request view 123`
 - "给工单 123 回复：已处理"  
   `mes service request reply 123 --text "已处理，等待验证" --dry-run`
-- "按工单 123 报工 2 小时"  
-  `mes service request report 123 --start "2026-03-24 14:00:00" --end "2026-03-24 16:00:00" --hours 2 --dry-run`
 
 - "帮我创建一个服务请求，标题是 '数据库连接失败'，公司 ID 是 4，合同子项 ID 是 2025103112176，等级 P3，正文说：今天早上 9 点开始连接不上数据库，报错如下：[错误提示]"
   `mes service create --title "数据库连接失败" --company-id 4 --acc-id "2025103112176" --type 3 --body-md "### 问题背景\n\n今天早上 9 点开始连接不上数据库。\n\n### 报错信息\n\n\`\`\`\n[错误提示]\n\`\`\`" --dry-run`
@@ -49,17 +48,25 @@
 
 - "查我的实施计划"  
   `mes -o json plan list --executor-id <uid>`
+- "查标题含关键词的实施计划"  
+  `mes -o json plan list 2025驻场`  
+  （等效于 `mes -o json plan list --title "2025驻场"`）
 - "结束实施计划 16570"  
   `mes plan end 16570`
+- "查实施计划 16570 详情"  
+  `mes -o json plan view 16570`
 
 ### 合同
 
 - “按关键词查合同”  
-  `mes -o json contract list --search "Oracle"`
+  `mes -o json contract list Oracle`  
+  （等效于 `mes -o json contract list --search "Oracle"`）
 - "按合同编号查询合同子项"  
   `mes -o json contract list-items --contract-num "00032597"`
 - "查某合同下实际工时为0的子项"  
   `mes contract list-items --contract-id 12345 --actual-hours-zero-only`
+- "查合同 12345 详情"  
+  `mes -o json contract view 12345`
 
 ### 知识库与文章
 
@@ -97,7 +104,10 @@
 - "看工作情况客户工时（上月）"  
   `mes -o json dashboard work --executor-id 123 --range lastMonth`
 - "看周报列表（某人+某天）"  
-  `mes -o json dashboard weeklyReport 20260306 张三`
+  `mes -o json dashboard weeklyReport --period-from 2026-03-06 --period-to 2026-03-06 --creator 张三`
+- "搜索含关键词的周报"  
+  `mes -o json dashboard weeklyReport list 磐维`  
+  （等效于 `mes -o json dashboard weeklyReport list --search "磐维"`）
 - "查报工质量" / "查看报工评分" / "本月报工质量怎么样" / "团队报工质量评分"  
   `mes -o json dashboard score list --month 2026-04`  
   可加 `--executor-id <uid>` 或 `--team-id <tid>` 筛选
@@ -175,16 +185,16 @@
 ### 自动归纳服务请求内容并报工
 
 **用户**  
-请使用mes cli解读服务请求https://support.enmotech.com/service/request/5183 的内容，然后在该服务请求对应的实施计划下创建报工，处理时长4小时，从10点到17点，报工工作内容请直接总结服务请求上的回复内容、状态和进度
+请使用mes cli解读服务请求https://support.enmotech.com/service/request/5183 的内容，然后在该服务请求下创建报工，处理时长4小时，从10点到17点，报工工作内容请直接总结服务请求上的回复内容、状态和进度
 
 **Agent should do**
 
-1. 先读取服务请求详情/回复，提炼状态、进度、关键动作。
-2. 用 `service request report` 生成并提交报工（支持 dry-run）。
+1. 先读取服务请求详情（`mes service request view <id>`），提炼状态、进度、关键动作。
+2. 用 `mes statistics add --type 0 --rid <id>` 报工（支持 dry-run）。
 
 **Command**
 
-`mes service request report "https://support.enmotech.com/service/request/5183" --start "2026-03-24 10:00:00" --end "2026-03-24 17:00:00" --hours 4 --dry-run`
+`mes statistics add --type 0 --rid 5183 --start "2026-03-24 10:00:00" --end "2026-03-24 17:00:00" --hours 4 --remark "服务请求处理：当前状态xxx，进度xxx。今日主要跟进回复：1) xxx。" --dry-run`
 
 提交时去掉 `--dry-run`。
 

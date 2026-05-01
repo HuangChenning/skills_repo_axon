@@ -94,7 +94,7 @@
   - `--company-id`
   - `--type`
   - `--service-type`
-  - `--overtime-type`（`null|0|1|2`）
+  - `--overtime-type`（`null|0=工作日加班 1=休息日加班 2=节假日加班`，默认 null 非加班）
   - `--dry-run`
   - `--json`
 - `statistics delete <id>`
@@ -119,12 +119,13 @@
   - `--fault-id`
   - `--amount`
   - `--json`
-- `statistics list`
+- `statistics list [title]`
+  - **位置参数**：`mes statistics list <关键词>` 等效于 `--title <关键词>`
   - `--from`, `--to`, `--range`
   - `--title`, `--remark` (均支持关键词模糊搜索)
   - `--company-id`, `--team-id`
   - `--acc-id`
-  - `--executor-id`
+  - `--executor-id`, `--executor-name` (互斥)
   - `--service-type`
   - `--review-status`, `--sign-status`
   - `--missing-acc`, `--missing-impl`
@@ -132,12 +133,12 @@
   - `--json`
 - `statistics calendar`
   - `--from`, `--to`, `--range`
-  - `--user-id`
+  - `--user-id`, `--user-name` (互斥)
   - `--company-id`
   - `--json`
 - `statistics summary`
   - `--from`, `--to`, `--range`
-  - `--user-id`
+  - `--user-id`, `--user-name` (互斥)
   - `--team-id`
   - `--work-city`
   - `--group-type`
@@ -214,7 +215,8 @@
 | 3    | P4   | 咨询，业务暂未受影响（技术咨询）           |
 | 5    | P5   | 问题原因分析                               |
 
-- `service request list`
+- `service request list [title]`
+  - **位置参数**：`mes service request list <关键词>` 等效于 `--title <关键词>`
   - `--unclosed`
   - `--is-starred`
   - `--page`, `--page-size`
@@ -223,7 +225,7 @@
   - `--min-level`
   - `--status`（建议中文；兼容数字：已提交|处理中|已关闭|已归档|待反馈|已恢复 = 0|1|2|3|4|5）
   - `--company-id`
-  - `--person-id`
+  - `--person-id`, `--person-name` (互斥)
   - `--menu-root-id`
   - `--start-time`, `--end-time`
   - `--title` (按标题关键词模糊搜索，支持部分匹配)
@@ -231,15 +233,6 @@
   - `--json`
   - **列表 JSON 语义**：`executorEmployeeName` = 当前负责人**真实姓名**；`executorName` 多为账号/昵称。按负责人聚合、筛选、对外展示时**优先** `executorEmployeeName`，缺省再回退 `executorName`。
 - `service request view <id|url>`
-  - `--json`
-- `service request report <id|url>`
-  - `--title`
-  - `--acc-id`
-  - `--company-id`
-  - `--start`
-  - `--end`
-  - `--hours`
-  - `--dry-run`
   - `--json`
 - `service request reply <id|url>`
   - `--text`
@@ -310,13 +303,14 @@
 
 #### 子命令参数
 
-- `plan list`
+- `plan list [title]`
+  - **位置参数**：`mes plan list <关键词>` 等效于 `--title <关键词>`
   - `--page`, `--page-size`
   - `--title` (按标题关键词模糊搜索，支持部分匹配)
   - `--company-name`
   - `--company-id`
   - `--team-id`
-  - `--executor-id`
+  - `--executor-id`, `--executor-name` (互斥)
   - `--check-type`
   - `--status`
   - `--range`
@@ -334,11 +328,12 @@
 
 ### `mes article`
 
-- `article list`
+- `article list [search]`
+  - **位置参数**：`mes article list <关键词>` 等效于 `--search <关键词>`
   - `--mode manage|audit|my`
   - `--page`, `--page-size`
   - `--status`
-  - `--created-by`
+  - `--created-by`, `--created-by-name` (互斥)
   - `--menu-id`
   - `--team-id`
   - `--search`
@@ -405,13 +400,14 @@
 
 ### `mes contract`
 
-- `contract list`
+- `contract list [search]`
+  - **位置参数**：`mes contract list <关键词>` 等效于 `--search <关键词>`
   - `--page`, `--page-size`
   - `--search`（合同名称/合同编号，模糊匹配，不区分大小写）
   - `--owner-id`
   - `--type`
   - `--period-type`（默认 `0`，仅查询服务中/有效期内的合同；传空值可查询全部合同）
-  - `--manager-id`
+  - `--manager-id`, `--manager-name` (互斥)
   - `--team-id`
   - `--start-time`, `--end-time`
   - `--json`
@@ -445,7 +441,7 @@
     - **审批工时统计** → `mes statistics review-stats`
     - 参数：`--month --team-id --executor-id --page --page-size --sort --truncate --no-truncate --limit --json`
   - `dashboard score prompt`：查看评分规则/提示词
-  - `dashboard weeklyReport list`：`--search --created-by --creator --type --period-from --period-to --page --page-size --json`
+  - `dashboard weeklyReport [list] [search]`：**位置参数**映射到 `--search`（`mes dashboard weeklyReport list <关键词>`）；`--search --created-by --creator --type --period-from --period-to --page --page-size --json`
   - `dashboard weeklyReport view <id>`：`--json`
   - `dashboard weeklyReport create`：`--type --period-from --period-to --md|--md-file|--html --json`
   - `dashboard weeklyReport update <id>`：`--type --period-from --period-to --md|--md-file|--html --json`
