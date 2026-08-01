@@ -67,6 +67,18 @@ npx skills add alchaincyf/huashu-design
 npx skills add alchaincyf/huashu-design
 ```
 
+> **装完先自检**：这个 skill 不只是 SKILL.md 一个文件，`references/`、`assets/`、`scripts/`、`demos/` 四个子目录里有 99 处被引用的配方、脚本、素材，缺一不可。装完看一眼安装目录（如 `~/.claude/skills/huashu-design/`），如果只有 SKILL.md、没有那几个子目录，说明你的 `skills` CLI 版本太旧（≤1.5.15 有个只同步单文件的 bug，已在 1.5.19 修复）。升级后再装一次即可：
+>
+> ```bash
+> npm i -g skills@latest        # 或 npx skills@latest add alchaincyf/huashu-design
+> ```
+>
+> 升级后仍异常，就用 `git clone` 兜底安装，把仓库克隆到任意 skills 目录即可：
+>
+> ```bash
+> git clone https://github.com/alchaincyf/huashu-design.git ~/.claude/skills/huashu-design
+> ```
+
 然后在 Claude Code / Codex / Cursor 等任意支持 skills 的 agent 里直接说话：
 
 ```
@@ -253,6 +265,12 @@ A/B 测试（v1 vs v2，各跑 6 agent）：**v2 的稳定性方差比 v1 低 5 
 | 跨 agent | 专属 Claude.ai | 任意 skill 兼容 agent |
 
 Claude Design 是**更好的图形工具**，huashu-design 是**让图形工具这层消失**。两条路，不同受众。
+
+---
+
+## 安全与数据流
+
+核心链路（设计→渲染→MP4/PDF/PPTX导出）**100%本地运行，零网络零key**。云能力（豆包TTS配音、AI看片评审）全部隔离在 `scripts/cloud/`，完全可选：用你自己的key、只发对应厂商官方API、首次调用需 `--yes` 显式确认。无telemetry，没有任何数据发往作者服务器。全部出站域名、密钥处理、删除边界的穷举声明见 [SECURITY.md](SECURITY.md)，欢迎用你的agent对着代码逐条核验。
 
 ---
 

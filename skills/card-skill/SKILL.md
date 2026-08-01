@@ -1,8 +1,8 @@
 ---
 name: card-skill
-description: "Render text content into a polished, shareable PNG visual. Use this skill whenever the user asks to turn words, notes, articles, quotes, arguments, or stories into an 信息图/infographic, 海报/poster, 卡片/card, 大字报, whiteboard, visual summary, comic, sketchnote, social card grid, 公众号头图, 博客封面, 正文配图, 正文解释图, 关系图, 流程图, 边界图, or non-summary editorial image for an essay. Trigger on phrases like 做成图, 渲染成图, 做张卡片, 卡片组, 做成漫画, 视觉笔记, 给文章配图, article cover, blog hero, article diagram, concept map, process flow, and editorial image. Supports 9 modes: infographic, big-text poster, long-form reading card, whiteboard reasoning, multi-card poster, comic, sketchnote, editorial-image, and article-diagram. If the user mentions a restrained brand feel such as Apple, Stripe, Linear, Vercel, IBM, Notion, Claude, or similar, apply it as a visual style, not as a full brand redesign. Do not use for websites, UI components, Figma prototypes, logos/VI systems, chart-library plotting, photo editing, or plain file conversion."
+description: "Render text content into a polished, shareable PNG visual. Use this skill whenever the user asks to turn words, notes, articles, quotes, arguments, stories, explicit WeChat Reading highlights/thoughts, or WeChat Reading personal statistics into an 信息图/infographic, 海报/poster, 卡片/card, 大字报, whiteboard, visual summary, comic, sketchnote, social card grid, 公众号头图, 博客封面, 正文配图, 正文解释图, 关系图, 流程图, 边界图, reading report, or non-summary editorial image for an essay. Trigger on phrases like 做成图, 渲染成图, 做张卡片, 卡片组, 做成漫画, 视觉笔记, 给文章配图, 微信读书划线做卡, 微信读书笔记, 微信读书阅读月报, article cover, blog hero, article diagram, concept map, process flow, and editorial image. Supports 9 modes: infographic, big-text poster, long-form reading card, whiteboard reasoning, multi-card poster, comic, sketchnote, editorial-image, and article-diagram. If the user mentions a restrained brand feel such as Apple, Stripe, Linear, Vercel, IBM, Notion, Claude, or similar, apply it as a visual style, not as a full brand redesign. Do not use for websites, UI components, Figma prototypes, logos/VI systems, chart-library plotting, photo editing, or plain file conversion."
 user_invocable: true
-version: "0.2.12"
+version: "0.8.0"
 ---
 
 # card-skill
@@ -25,7 +25,9 @@ npx playwright install chromium
 
 For one-off use without installing, run `npx skills use KKenny0/card-skill/plugins/card-skill/skills/card-skill --skill card-skill`.
 
-**Update check (non-blocking).** Before starting, run `node scripts/check-update.mjs` once; if it prints a line, relay it to the user, then continue. It runs at most once a day, only reads this skill's public `VERSION` file, sends no content, and fails silently. Set `CARD_SKILL_DISABLE_UPDATE_CHECK=1` to skip this check.
+**Runtime dependency check.** Before the first render, run `node scripts/setup-runtime.mjs --check` from this skill directory. If it reports a missing dependency, run `node scripts/setup-runtime.mjs` once and then repeat the check. This installs the declared npm packages in the skill directory and Playwright Chromium in the user's normal Playwright cache. Relay setup failures instead of bypassing the output checks.
+
+**Update check and automatic upgrade.** Before any card request, including Studio-tier requests and Codex direction preview, run `node scripts/check-update.mjs` once; if it prints a line, relay it to the user, then continue. After the current output is delivered, run `node scripts/check-update.mjs --auto-update` so this installed copy is upgraded to the exact commit resolved from the latest stable Release, version-read back, and prepared for the next use; this never changes the current render. Direct `scripts/card.js` rendering performs the check defensively and launches the post-render upgrade in the background. State and locks are isolated per installation, so concurrent renders or a second Codex/skills copy cannot suppress or race the update. The check only reads GitHub's public Release and commit APIs; installation downloads the matching commit through Codex or a pinned `skills` CLI and sends no card content. Failed installation or runtime preparation restores the previous copy. Set `CARD_SKILL_DISABLE_UPDATE_CHECK=1` to disable both checking and upgrading, or `CARD_SKILL_DISABLE_AUTO_UPDATE=1` to keep the check while disabling automatic upgrades.
 
 将内容铸成可见的形态。内容进去，PNG 出来。模具决定形状。
 
@@ -33,7 +35,9 @@ For one-off use without installing, run `npx skills use KKenny0/card-skill/plugi
 
 ## 默认原则
 
-默认直接产出可用 PNG，不要先让用户做选择题。除非用户明确要求“给我几个方向 / 换一批 / 先选风格”，否则自动选择最合适的 mode、design 和画面方向，并在验证通过后交付。
+默认直接产出可用 PNG，不要先让用户做选择题。除非用户明确要求“给我几个方向 / 换一批 / 先选风格”，否则自动选择最合适的 mode、四个 tone（`reflective` / `sharp` / `warm` / `technical`）和画面方向，并在验证通过后交付。26 个既有 design 仍是高级显式 override，用户指定时必须完全尊重。
+
+所有 mode 默认共享同一套 Quiet Paper 气质：纸面底色、香萃字系、低饱和墨色、细分隔线、小圆角、极少阴影。`editorial-image` 和 `article-diagram` 可以有不同用途，但不能另起一套封面模板、流程图或 dashboard 视觉语言；品牌 design 只改变气质温度，不改变这套纸面纪律。
 
 优先从用户的发布任务理解需求，再映射到内部 mode；不要要求用户先学习 mode 名称：
 
@@ -42,8 +46,13 @@ For one-off use without installing, run `npx skills use KKenny0/card-skill/plugi
 | 公众号头图 / 封面 | `editorial-image` + `wechat-cover` |
 | 正文氛围插图 / 段落视觉换气 | `editorial-image` + `body-3-2` |
 | 正文解释图 / 关系图 / 流程图 / 边界图 | `article-diagram` |
+| 长文章 / 深度阅读 / 保留段落节奏 | `long` |
 | 小红书 / 社媒卡片 | 单一观点优先 `big`，多观点或系列优先 `poster`，结构化知识优先 `infograph` |
+| 微信读书个人划线 / 想法 | 默认 `poster` + `reading-notes`；单句 `big`，长文笔记 `long`，显式结构压缩 `article-diagram` |
+| 微信读书阅读月报 / 年报 | `poster`，只渲染官方回包实际提供的统计模块 |
 | 推理过程 / 关系梳理 / 白板 | `whiteboard` |
+| 有冲突、转折或人物动作的叙事 | `comic` |
+| 个人经验、反思、失败到顿悟的弧线 | `sketchnote` |
 
 这些只是入口映射；内容结构明显更适合其他现有 mode 时，自动改走更合适的路线。
 
@@ -56,7 +65,13 @@ For one-off use without installing, run `npx skills use KKenny0/card-skill/plugi
 | `--dpr` | 设备像素比 | 2（2× 像素密度） |
 | `brand_name` | 可选署名/品牌文字；只在用户明确提供时渲染 | 空 |
 | `logo` | 可选署名头像/品牌 logo 路径；只在用户明确提供时渲染 | 空 |
-| `source` | 可选来源文字；`long`、`editorial-image` 与 `article-diagram` 支持 | 空 |
+| `source` | 可选来源文字；`long`、`poster`、`editorial-image` 与 `article-diagram` 支持 | 空 |
+
+## Codex 环境扩展（可选）
+
+在支持对话内交互卡片的 Codex 桌面环境中，可以在渲染前展示少量候选方向，让用户选择视觉隐喻、公式压缩或设计气质。这个入口只是决策面，不是第 10 个 mode，不改变最终 PNG 输出契约，也不替代 schema、renderer、Playwright 截图或 `check-output`。
+
+完整规则见 `references/codex-inline-preview.md`。Codex CLI、IDE、其他 coding agent 或当前宿主不支持交互卡片时，沿用同一份候选契约输出文字列表；预览不可用不得阻塞原有直接出图流程。
 
 ## 执行流程
 
@@ -65,24 +80,24 @@ For one-off use without installing, run `npx skills use KKenny0/card-skill/plugi
 card-skill 把 9 个 mode 分两层：
 
 - **Stable tier**（CLI-rendered）：`big`、`long`、`whiteboard`、`poster`、`article-diagram`，以及 `editorial-image` 的封面 / hero 子场景（`use=cover`）。走结构化 renderer，schema 校验失败直接报错；输出确定性高，是产品主体。
-- **Creative tier**（AI-rendered）：`infograph`、`comic`、`sketchnote`，以及 `editorial-image` 的正文氛围 / 概念隐喻子场景（`use=in-article` / `metaphor`）。Schema 只锁基本字段（title / aspect / use），实际产出靠 AI 写 `content_html` + `custom_css`；每次产物有差异，依赖人工审美兜底。
+- **Studio tier**（formal composition）：`infograph`、`comic`、`sketchnote`，以及 `editorial-image` 的正文氛围 / 概念隐喻子场景（`use=in-article` / `metaphor`）。必须保留完整 composition contract 并进入正式 capture/check 链，但仍需要人工视觉验收；Studio 不伪装成 Stable。
 
 判断当前内容能否走 Stable tier 的 CLI 路径：
 
 判断逻辑：
-1. 如果 mode 是 infograph / comic / sketchnote → 直接进入 Creative tier 的 AI 流程（Step 1）
+1. 如果 mode 是 infograph / comic / sketchnote → 进入 Studio tier（Step 1），先生成完整 `content_html` + `custom_css` composition contract，再交给正式 CLI renderer
 2. 如果 mode 是 article-diagram：
-   - 先进入 Step 1.6 选择固定图型：`concept-map` / `process-flow` / `boundary-model`
-   - 如果输入是整篇文章，先逐章筛选；凡是值得画的章节都各出一张正文解释图，不要把整篇文章塞成一张节点清单
-   - 单张图只表达一个章节里的一个关系、流程或边界
-   - 提取 `nodes`，必要时提取 `links`；`boundary-model` 还必须提取 `zones`
+   - 先进入 Step 1.6，把文章片段压成统一三件套：`formula` / `sentence` / `structure`
+   - 默认只输出公式卡：`formula` 是主视觉，`sentence` 是低权重解释脚注；暂不默认渲染结构图
+   - 如果输入是整篇文章，先逐章筛选；凡是值得压缩的章节都各出一组 compression pack，不要把整篇文章塞成一张节点清单
+   - 旧 `concept-map` / `process-flow` / `boundary-model` 输入只作为兼容路径；新产出不要公开暴露 family 选择
    - CLI 路径可直接渲染；schema 失败时先简化结构，不要改走开放自由画布
 3. 如果 mode 是 editorial-image：
    - 先进入 Step 1.5 生成或确认视觉方向
    - 先把自然语言用途映射成结构化字段：`use` 只表示编辑任务（`cover` / `in-article` / `metaphor`），`aspect` 只表示画布比例（`wechat-cover` / `blog-hero` / `body-3-2` / `body-4-3` / `cinematic` / `square`）
    - 按 `use` 分流 tier：
-     - `use=cover` → Stable 子场景。CLI scaffold（kicker + title + subtitle + 静态 paper-stack）即最终产出，不需要 `content_html`
-     - `use=in-article` / `metaphor` → Creative 子场景。必须由 AI 写 `content_html` + `custom_css`；只有 `title/use/aspect/visual_metaphor/art_direction` 时，CLI 可渲染 scaffold 但仅用于比例验证，不作为最终产出
+     - `use=cover` → Stable 子场景。CLI scaffold 由 kicker、title、subtitle 和确定性的 `cover_motif` 组成；文章型封面必须选择能承载核心张力的具体 motif，只有刻意的通用旧封面才省略它并回退 paper-stack
+     - `use=in-article` / `metaphor` → Studio 子场景。必须设置 `composition_required: true` 并由 AI 写 `content_html` + `custom_css`；CLI 会拒绝缺少完整构图的输入，不再渲染 scaffold
    - 如果已有具体画面结构（`content_html` + `custom_css`）→ CLI 路径，作为高质量最终图的首选
    - 如果还没有视觉方向 → 默认自动选择 1 个最强方向并继续渲染；只有用户明确要求候选时，才先产出 2-3 个方向等待选择
 4. 如果 mode 是 big / long / whiteboard / poster：
@@ -99,16 +114,16 @@ node scripts/card.js --input <system_temp>/card_input_{timestamp}.json --output 
 ```
 4. 无论成功或失败，都删除本次临时 JSON
 5. CLI 成功 → 脚本已完成预检、DPR 2 截图和脚本复查；实际查看 PNG 后进入 Step 8 交付
-6. CLI 失败 → 报告错误，降级到 AI 全流程（继续 Step 1）
+6. CLI 失败 → 按错误分类处理：`input_contract` 最多修正一次；只有 `content_fit` 可在同一 mode 内简化一次；`runtime`、`safety` 与 `quality_gate` 硬失败。任何修正都必须重新 validation、capture、check 和 PNG inspection，不能无声切换论点或旁路 checker。
 
 **JSON schema 结构**（每个 mode 的完整定义见 `schemas/` 目录）：
 
 big: `{ mode, phrase, design?, accent_words?, ghost_char?, attribution? }`
 long: `{ mode, title, body: [{type, text, ...}], design?, kicker?, subtitle?, theme? }`
 whiteboard: `{ mode, title, steps: [{type, ...}], design?, subtitle?, accent_words? }`
-poster: `{ mode, title, cards: [{body: [{type, ...}]}], design?, subtitle? }`
-editorial-image: `{ mode, title, use?, aspect?, visual_metaphor?, art_direction?, content_html?, custom_css?, design?, editorial_tone? }`
-article-diagram: `{ mode, family, title, nodes: [{id, label, note?, zone?}], links?, zones?, caption?, design? }`
+poster: `{ mode, variant?, title, cards: [{title?, body: [{type, ...}]}], design?, subtitle?, source? }`；个人读书笔记使用 `variant: "reading-notes"`，配对内容单元为 `{ type: "reading_unit", quote, thought? }`
+editorial-image: `{ mode, title, use?, aspect?, visual_metaphor?, cover_motif?, art_direction?, content_html?, custom_css?, composition_required?, design?, editorial_tone? }`；文章型 `use=cover` 选择 `cover_motif`，`use=in-article` / `metaphor` 必须带 `composition_required: true`、`content_html` 与 `custom_css`
+article-diagram: `{ mode, title, formula, sentence, structure: {nodes: [{id, label, note?}], relations?}, render_plan?, caption?, design? }`；legacy: `{ mode, family, title, nodes, links?, zones? }`
 
 ### Step 0.5: 读取基础
 
@@ -130,11 +145,23 @@ article-diagram: `{ mode, family, title, nodes: [{id, label, note?, zone?}], lin
    - `references/mode-poster.md` — 多卡分割（视觉权重计算、贪婪分割算法）
    - `references/mode-comic.md` — 漫画叙事（冲突提取、分镜系统、5 种风格路线）
    - `references/mode-editorial-image.md` — 长文作者配图（视觉立场、概念隐喻、公众号/博客封面、正文氛围插图）
-   - `references/mode-article-diagram.md` — 正文解释图（概念图、流程图、边界模型）
+   - `references/mode-article-diagram.md` — 正文解释图（默认公式卡：公式 + 一句话；结构图暂缓，旧图型只作兼容）
+   - `references/source-weread.md` — 可选微信读书来源适配（显式授权、个人笔记与阅读报告、来源标注、隐私和失败降级）
 
 ### Step 1: 获取 + 分析内容
 
 **获取**：URL → WebFetch / 粘贴文本 → 直接用 / 文件路径 → Read
+
+**微信读书可选来源**：只有用户明确提到微信读书，或明确说明当前划线、想法、统计来自微信读书时，才进入 `references/source-weread.md`。先读取已安装的官方 `Tencent/WeChatReading` Skill 的完整 `SKILL.md` 和当前请求对应的能力文档，由官方 Skill 负责认证、版本、分页、字段含义与 deepLink；card-skill 只接收规范化后的个人内容或统计并负责制图。普通书名、未注明平台的个人阅读统计、通用读书卡或文章请求不得隐式读取个人账号。官方 Skill 未安装、Key 缺失、升级提示、数据不可用和隐私降级规则全部见该 reference。
+
+个人划线与想法进入默认 Poster 路线时，必须显式使用 `variant: "reading-notes"`：
+
+- 一条原文划线及其精确配对的个人想法组成一个 `reading_unit`；`quote` 逐字保留，`thought` 只有在来源层已经精确配对时才写入。
+- 没有配对 quote 的章节点评与整本书评继续使用 `items` / `paragraph`，并分别标明 `章节点评`、`整本书评`；不能伪装成 `我的想法`。
+- 1–8 个内容单元全部保留；超过 8 个且用户未要求全量时，按章节与主题整理为 6–8 张卡，每张约 2–4 个相关单元，并在交付中说明 `本次使用 X / 可用 Y`。
+- 主题标题只是整理标签，不得冒充书中小节；必要时写明 `主题整理`。
+- 用户明确要求每条都要时，不做隐式精选；保持原始顺序，分成每批最多 8 张卡。
+- 第一张卡必须同时包含系列标题和实际内容，不能生成 title-only 首卡。
 
 **分析**：提取内容的三维特征（详见 `references/mode-infograph.md`）
 
@@ -159,7 +186,7 @@ article-diagram: `{ mode, family, title, nodes: [{id, label, note?, zone?}], lin
 
 当用户要求 `给文章配图` / `公众号头图` / `博客封面` / `article cover` / `blog hero` / `editorial image`，且目标是封面、氛围、隐喻或视觉立场时，进入 `editorial-image` 流程。
 
-**子场景 tier 提示**：封面 / hero 请求（`use=cover`）走 Stable CLI scaffold，scaffold 即最终产出；正文氛围 / 概念隐喻请求（`use=in-article` / `metaphor`）走 Creative 流程，必须由 AI 写 `content_html` + `custom_css`，schema 只锁基本字段。详细区别见 `references/mode-editorial-image.md` 的 Tier Commitments 章节。
+**子场景 tier 提示**：封面 / hero 请求（`use=cover`）走 Stable CLI scaffold：标题区配一个确定性的 `cover_motif`，让右侧主视觉随文章张力变化且仍可重复渲染；正文氛围 / 概念隐喻请求（`use=in-article` / `metaphor`）走 Studio 流程，必须设置 `composition_required: true` 并提供 `content_html` + `custom_css`。详细区别见 `references/mode-editorial-image.md` 的 Tier Commitments 章节。
 
 如果用户要求的是 `正文解释图` / `关系图` / `流程图` / `边界图` / `权限边界` / `安全边界` / `article diagram` / `concept map` / `process flow`，或正文配图里明显出现节点、连线、嵌套框、步骤、区域、权限、信任边界，改走 Step 1.6 的 `article-diagram`，不要默认塞进 `editorial-image + body-3-2`。
 
@@ -176,9 +203,9 @@ article-diagram: `{ mode, family, title, nodes: [{id, label, note?, zone?}], lin
 | 正文氛围插图 / 段落视觉换气 / quiet section image | `in-article` | `body-3-2` |
 | 概念隐喻图 / visual metaphor | `metaphor` | `blog-hero` |
 
-结构化字段只负责约束：用途、比例、标题、视觉隐喻、裁切上下文。不要把这些字段当成完整模板。高质量配图应在方向确认后使用 `content_html` + `custom_css` 做开放构图；默认 CLI renderer 只是比例安全的 Quiet Paper scaffold，适合验证和简单封面，不应当作为复杂文章配图的默认终点。
+结构化字段负责约束：用途、比例、标题、视觉隐喻、`cover_motif`、裁切上下文。`cover_motif` 是可见的、受控的右侧对象；`visual_metaphor` 仍是选图语义，不能只停留在隐藏字段里。高质量配图在方向超出这个对象词表时使用 `content_html` + `custom_css` 做开放构图；默认 CLI renderer 适合稳定文章封面，不应当作为复杂文章配图的默认终点。
 
-`use=in-article` / `metaphor` 子场景（Creative）的正式配图必须有一个具体主视觉对象或场景，例如桌面、抽屉、纸页、窗口、手势、路径、容器、仪表、地图、阴影关系等。不要只用纸片、线条、抽象框和留白来替代视觉隐喻；如果拿掉标题后画面与文章关系消失，就需要重做 `content_html` + `custom_css`。`use=cover` 子场景（Stable）的 CLI scaffold（kicker + title + subtitle + 静态 paper-stack）不需要额外主视觉对象，除非用户明确要求。
+`use=in-article` / `metaphor` 子场景（Studio）的正式配图必须设置 `composition_required: true`，并有一个具体主视觉对象或场景，例如桌面、抽屉、纸页、窗口、手势、路径、容器、仪表、地图、阴影关系等。不要只用纸片、线条、抽象框和留白来替代视觉隐喻；如果拿掉标题后画面与文章关系消失，就需要重做 `content_html` + `custom_css`。`use=cover` 子场景（Stable）必须为文章型封面选择 `cover_motif`：`drawer`、`window`、`lens`、`path`、`archive` 或 `layers`；`paper-stack` 只保留给刻意的通用旧封面。
 
 `editorial-image` 支持 `design` 和 `editorial_tone` 字段。`design` 是显式设计系统，优先级最高；`editorial_tone` 是自动选择入口，只能是 `reflective` / `sharp` / `warm` / `technical`。设计系统只控制气质层：纸面颜色、墨色、accent、边框和整体温度；不决定视觉隐喻、构图对象或文章立场。用户未指定 `design` 时，必须根据文章情绪给出 `editorial_tone`，让 CLI 落到真实存在的 Quiet Paper design。
 
@@ -217,35 +244,41 @@ article-diagram: `{ mode, family, title, nodes: [{id, label, note?, zone?}], lin
 
 当用户要求 `正文解释图` / `关系图` / `流程图` / `边界图` / `权限边界` / `安全边界` / `trust boundary` / `article diagram` / `concept map` / `process flow` 时，进入 `article-diagram` 流程。
 
-先读取 `references/mode-article-diagram.md`。默认选择 1 个固定图型并继续渲染；不要为了显得丰富而产出多个方向，除非用户明确要求先看方案。
+先读取 `references/mode-article-diagram.md`。默认采用统一 compression pack，不再先问“选哪种图型”，而是问“这段内容能被压成什么公式、什么一句话、什么结构骨架”。
 
-图型选择：
+压缩三件套：
 
-| 用户意图 | `family` | 结构 |
-|----------|----------|------|
-| 2-5 个概念及其关系 | `concept-map` | `nodes` + 可选 `links` |
-| 顺序、循环、管线、交接路径 | `process-flow` | 按顺序排列的 `nodes` |
-| 内外边界、权限、信任、安全、沙箱 | `boundary-model` | `zones` + 带 `zone` 的 `nodes` |
+| 字段 | 作用 | 要求 |
+|------|------|------|
+| `formula` | 核心关系 / 不变量 / 转换式 | 像公式，但不必是数学；必须能解释文章里的关系 |
+| `sentence` | 人能带走的一句话 | 不复述标题，给出判断 |
+| `structure` | 支撑公式的结构板 | 2-6 个节点，最多 6 条关系 |
 
 约束：
-- `concept-map` 最多 5 个节点；`process-flow` 和 `boundary-model` 最多 6 个节点
-- `boundary-model` 必须有 2-4 个 `zones`，每个 node 必须归属一个 zone
-- 节点标签短于 36 个字符；链接标签短于 24 个字符
-- 链接标签是可选注释，不是必填结构；多条边使用同一个关系词时，不要逐条显示，把共同关系写进标题或 caption
-- 输入是整篇文章时，先按章节分组；有关系、流程、边界、权限、信任层、因果链或系统结构的章节都要各自生成一张图
+- `structure.nodes` 最少 2 个、最多 6 个；节点标签短于 36 个字符
+- `structure.relations` 最多 6 条；关系标签短于 24 个字符
+- 关系标签是可选注释，不是必填结构；共同关系优先写进 `formula` 或 `sentence`
+- 输入是整篇文章时，先按章节分组；有关系、流程、边界、权限、信任层、因果链或系统结构的章节都要各自生成一组 compression pack
 - 纯铺垫、纯情绪、纯结论、没有结构关系的章节跳过；不要为了覆盖所有标题机械出图
-- 每张正文解释图只服务一个章节，不混合多个章节；输出顺序跟随文章顺序
-- 可见文字默认跟随原文和用户请求：中文文章用中文标题、节点、连线、区域和说明；英文文章用英文；只有用户明确要求英文、双语或翻译时才改变语言
+- 每组 compression pack 只服务一个章节，不混合多个章节；输出顺序跟随文章顺序
+- 可见文字默认跟随原文和用户请求：中文文章用中文标题、公式、句子、节点、关系和说明；英文文章用英文；只有用户明确要求英文、双语或翻译时才改变语言
 - 标题描述关系，不写 `article diagram`、`正文解释图`、`concept map`、`process flow` 这类产物类型
-- 如果用户给了很多材料，按章节抽出最小关系；不要把文章所有观点都塞进同一张图里
+- 如果用户给了很多材料，按章节抽出最小压缩单元；不要把文章所有观点都塞进同一张图里
+- 旧 `family` 输入仍可渲染，但只用于兼容历史素材或用户明确要求的技术图
+- 渲染时默认使用公式卡：只展示 `formula` 和 `sentence`，不展示标题、图序号、模板标签、顶部概括语或底部 caption
+- 公式卡统一使用 Editorial Equation：主结论、短分隔线、1-3 行语义完整的关系式、1-2 行旁注；不得切换成 ledger、双栏证明页或底部大段文字
+- renderer 必须先测量真实字体，再从固定字号档和 `body-2-1` / `body-3-2` 中选择可读候选；term 只能在关系符边界换行，不得拆词或靠连续缩字救场
+- `structure` 仍然作为语义输入保留，用来帮助生成公式和未来结构图；除非显式要求 `render_plan: "structure"` 或 `render_plan: "split"`，否则不要默认可视化它
 
 出图前自检：
-- 3 秒内能看出主关系吗？
-- 是否选对图型，而不是拿边界图画流程、拿流程图画概念网？
-- 整篇文章输入时，是否已经画出所有值得画的章节，并跳过不适合画的章节？
-- 每张图是否只对应一个章节？
+- 公式是否真的表达关系，而不是漂亮标题？
+- 一句话是否给出判断，而不是摘要句？
+- 结构字段是否支撑公式，而不是强行生成一张开放形态结构图？
+- 整篇文章输入时，是否已经压缩所有值得压缩的章节，并跳过不适合的章节？
+- 每组图是否只对应一个章节？
 - 每个可见标签都在命名内容，不是在描述图片用途？
-- 节点、区域、连线有没有互相压住？
+- 节点、关系条、标题、caption 有没有互相压住？
+- 主体结构是否占据画面主要面积，而不是被公式、标签或模板装饰抢走注意力？
 - 缩略图里是否还看得出主结构？
 
 ### Step 2: 匹配设计系统
@@ -254,7 +287,7 @@ article-diagram: `{ mode, family, title, nodes: [{id, label, note?, zone?}], lin
 
 **editorial-image 跳过常规候选匹配**：先按 `references/mode-editorial-image.md` 确定视觉方向，再根据气质选择 Quiet Paper token。
 
-**article-diagram 跳过常规候选匹配**：先按 `references/mode-article-diagram.md` 确定 `family`，再用固定槽位渲染。设计系统只改变纸面气质，不改变图型。
+**article-diagram 跳过常规视觉模板匹配**：先按 `references/mode-article-diagram.md` 生成 compression pack，再由 Editorial Equation 测量布局器选择语义分行、字号档和画布比例。设计系统只改变纸面气质，不改变压缩逻辑或阅读轴。
 
 默认从 design-index.md 中直接选择 1 个最合适的品牌气质，不等待用户确认。先使用 Quiet Paper 审美骨架，再根据内容选择轻微偏向。
 
@@ -270,23 +303,34 @@ article-diagram: `{ mode, family, title, nodes: [{id, label, note?, zone?}], lin
 3. **密度适配**：稀→留白风格（apple, notion），密→data-dense 风格（stripe, ibm）
 4. **多样性边界**：候选之间应气质不同，但都必须保持 Quiet Paper：暖纸或深卡纸、低饱和 accent、小圆角、少阴影
 
-如果用户明确要求候选、换一批或选择风格，再输出 3-5 个候选列表，每个附一句话匹配理由。
+如果用户明确要求候选、换一批或选择风格，默认给 2-3 个候选，每个附一句话匹配理由；用户明确指定 2-5 个候选时服从指定数量。支持 Codex 对话预览时进入 Step 3.5；其他环境只进入 Step 3 的文字候选流程，两条路径不要重复执行。
 
 ### Step 3: 候选确认（仅按需）
 
-只有用户要求先看候选时，才在终端展示候选列表，每个附一句话匹配理由和色板信息：
+只有用户要求先看候选，且当前宿主不支持 Codex 对话预览时，才在终端展示文字候选。候选必须直接来自当前任务的 `Card Decision Brief.candidates`，不得预置 design 名称、固定品牌组合或与当前内容无关的示例。
 
 ```
-候选设计系统：
-1. linear — 深色卡纸里的精密感，适合技术架构内容 (Canvas: #151413, Accent: #7b84b8)
-2. claude — 温暖编辑风，适合人文思考 (Canvas: #f5f0e8, Accent: #9b6048)
-3. stripe — 安静数据秩序，适合金融展示 (Canvas: #f6f4ee, Accent: #314d73)
-4. notion — 简约纸面留白，适合知识管理 (Canvas: #f6f3ec, Accent: #6f6095)
+候选方向：
+1. {label} — {why} / 风险：{risk}
+2. {label} — {why} / 风险：{risk}
+3. {label} — {why} / 风险：{risk}
 ```
 
-告知用户：选择编号（如"用 2"），或说"换一批"重新推荐。用户确认后进入 Step 4。
+默认输出 2-3 个；用户明确指定 2-5 个时按指定数量输出。告知用户：选择编号（如“用 2”），或说“换一批”重新生成当前内容的方向。用户确认后进入 Step 4。
 
 普通出图请求不要停在这里；自动选择设计系统后直接进入 Step 4。
+
+### Step 3.5: Codex 预览决策面（仅按需）
+
+只有当前宿主支持 Codex 对话预览，且满足以下任一条件时，才读取 `references/codex-inline-preview.md` 并生成预览：用户明确要求候选；或 `editorial-image` / `article-diagram` 存在会明显改变最终画面的多解决策。进入本步骤后不要再执行 Step 3 的文字候选流程。
+
+1. 先形成 `Card Decision Brief`，只保留当前任务必要的内容锚点、发布任务、路由和默认 2-3 个候选；用户明确指定 2-5 个候选时服从指定数量。
+2. 每个候选必须带真实可渲染的 `render_contract`，不能只展示抽象风格名或一组装饰色。
+3. `editorial-image` 候选围绕视觉隐喻、用途、比例和合法 design / tone；凡方向依赖默认 scaffold 中不存在的具体物体、动作、场景或空间关系，`render_contract` 必须带 `composition_required: true`。`article-diagram` 候选围绕 `formula`、`sentence`、`structure` 和显式的 `render_plan`。
+4. 用户确认后，使用宿主的 follow-up 能力把选中的规范化契约送回同一对话，再进入 Step 4；不要从预览中直接调用 CLI，也不要把候选 HTML 当成最终 PNG。
+5. 如果宿主不支持预览、选择回传失败或预览无法渲染，退回文字候选列表或默认自动选择。预览失败不得跳过 schema、截图、`check-output` 或人工看图。
+
+普通请求不经过本步骤，直接按现有流程自动选择并渲染。
 
 ### Step 4: 渲染
 
@@ -305,6 +349,8 @@ article-diagram: `{ mode, family, title, nodes: [{id, label, note?, zone?}], lin
 | article-diagram | CLI 使用 `scripts/renderers/article-diagram.js` 生成固定槽位正文解释图 |
 
 用户选定后：
+
+0. 先兑现候选的可执行性契约：`use=cover` 的文章型方向必须把 `visual_metaphor` 落成一个 `cover_motif`；如果方向超出受控对象词表，或 `use=in-article` / `metaphor`，必须设置 `editorial-image.composition_required: true`，根据已选 `visual_metaphor` / `art_direction` 生成非空 `content_html` 与 `custom_css`，并保留该字段再交给 CLI。不要删除或改成 `false` 来绕过校验。只有刻意的通用旧封面才省略 `cover_motif` 并使用 paper-stack。
 
 1. 读取紧凑设计文件：`references/designs/{name}.md`
    - `ljg-*` 色调无需读取文件，直接使用 design-index.md 中的 CSS 变量
@@ -330,8 +376,8 @@ article-diagram: `{ mode, family, title, nodes: [{id, label, note?, zone?}], lin
 6. 替换模板中的占位符（每个模板的占位符见模板文件顶部注释）
 7. 写入操作系统临时目录中的 `card_{name}.html`
 
-**Creative tier / 手工 HTML 交付约定**：
-- infograph / comic / sketchnote（Creative tier），以及 Stable tier CLI 失败后降级的手工 HTML，统一把 HTML 写到操作系统临时目录（macOS/Linux 使用系统 temp；Windows 使用 `%TEMP%`），不要在 repo 内创建 `tmp/`
+**Studio tier / 完整 composition 交付约定**：
+- infograph / comic / sketchnote（Studio tier）统一通过结构化 contract 调用 `scripts/card.js`；renderer 负责把 HTML 写到操作系统临时目录，不要在 repo 内创建 `tmp/`
 - PNG 输出到 `~/Downloads/`，文件名用内容主题或 mode 命名，避免只叫 `output.png`
 - 生成 HTML 后必须走 Step 5-7；不能只保存 HTML 或只报告“已完成”
 - 最终交付前必须实际查看 PNG，确认不是空白、裁切、文字重叠、主体太小或视觉关系不清
@@ -462,12 +508,12 @@ $output = Join-Path $env:TEMP 'smoke_big.png'
 
 涉及 `editorial-image` 设计选择时，还必须实际渲染并检查一组 PNG：`reflective`、`sharp`、`warm`、`technical`、显式 `design` 各 1 张。确认视觉气质确实不同、仍保持 Quiet Paper、无明显裁切/溢出/坏换行/主体过小。
 
-涉及 `article-diagram` 时，至少实际渲染并检查 `concept-map`、`process-flow`、`boundary-model` 各 1 张，确认缩略图里主关系清楚、节点和连线没有互相压住。
+涉及 `article-diagram` 时，至少实际渲染并检查一组 compression pack（默认公式卡），并回归 `concept-map`、`process-flow`、`boundary-model` 各 1 张 legacy fixture，确认缩略图里主关系清楚、节点和关系没有互相压住。
 
 ## 开发者工具（非 AI 流程使用）
 
 | 脚本 | 用途 |
 |------|------|
-| `scripts/gallery_render.js` | 渲染所有 design×mode 组合，生成静态展示页 |
+| `scripts/gallery-jobs.mjs` | 通过正式 Visual Job 生产链重建并字节核验 README gallery |
 | `scripts/batch_render_covers.js` | 批量生成亮色封面截图 |
 | `scripts/batch_render_covers_dark.js` | 批量生成暗色封面截图 |

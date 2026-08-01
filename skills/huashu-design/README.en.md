@@ -55,6 +55,18 @@ npx skills add alchaincyf/huashu-design
 npx skills add alchaincyf/huashu-design
 ```
 
+> **Verify after install**: this skill is more than a single SKILL.md — the `references/`, `assets/`, `scripts/`, and `demos/` subdirectories hold 99 referenced recipes, scripts, and assets that the skill depends on. After installing, check the install path (e.g. `~/.claude/skills/huashu-design/`); if you only see SKILL.md and none of those subdirectories, your `skills` CLI is too old (≤1.5.15 had a bug that synced only the single file, fixed in 1.5.19). Upgrade and reinstall:
+>
+> ```bash
+> npm i -g skills@latest        # or npx skills@latest add alchaincyf/huashu-design
+> ```
+>
+> If it's still wrong after upgrading, fall back to a `git clone` install — clone the repo into any skills directory:
+>
+> ```bash
+> git clone https://github.com/alchaincyf/huashu-design.git ~/.claude/skills/huashu-design
+> ```
+
 Then just talk to Claude Code:
 
 ```
@@ -222,6 +234,12 @@ Positioning differences:
 | Agent compatibility | Claude.ai only | Claude Code / Cursor / Trae / Hermes / OpenClaw |
 
 Claude Design is a **better graphics tool**. Huashu-design makes **the graphics-tool layer disappear**. Two paths, different audiences.
+
+---
+
+## Security & Data Flow
+
+The core pipeline (design → render → MP4/PDF/PPTX export) runs **100% locally — zero network calls, zero API keys**. Cloud features (Doubao TTS narration, AI video review) are isolated in `scripts/cloud/`, fully optional: your own keys, official vendor APIs only, and an explicit `--yes` consent gate before anything leaves your machine. No telemetry; nothing is ever sent to any author-controlled server. Every outbound host, credential touchpoint, and deletion boundary is exhaustively declared in [SECURITY.md](SECURITY.md) — point your agent at it and verify against the code.
 
 ---
 

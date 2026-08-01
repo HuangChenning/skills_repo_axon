@@ -1,8 +1,10 @@
 # Local handoff and work artifacts
 HANDOFF.md
+prototypes/
 tmp/
 card-workspace/
 gallery/
+.lode/tmp-*.json
 
 # Dependencies and OS files
 node_modules/
