@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy to runtime.local.json (git-ignored) and fill real addresses for this environment. Do not commit runtime.local.json.",
+  "email": {
+    "to": ["manager@example.com"],
+    "cc": [],
+    "bcc": []
+  }
+}
