@@ -16,7 +16,7 @@ env:
     description: Target file or directory to audit (defaults to current directory)
   - name: SEVERITY_FILTER
     required: false
-    description: Minimum severity level to report (critical, high, medium, all). Default: all
+    description: "Minimum severity level to report (critical, high, medium, all). Default: all"
 tools:
   - bash: Required. Executes audit scripts.
   - python3: Optional. Runs advanced static analysis.
