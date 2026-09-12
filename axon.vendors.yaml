@@ -4,26 +4,6 @@ vendors:
       subdir: skills/skill-creator
       dest: skills/skill-creator
       ref: main
-    - name: humanlayer-skills
-      repo: https://github.com/humanlayer/skills.git
-      subdir: plugins
-      dest: skills/humanlayer-skills
-      ref: main
-    - name: wecom-cli
-      repo: https://github.com/WecomTeam/wecom-cli.git
-      subdir: skills
-      dest: skills/wecom-cli
-      ref: main
-    - name: mopheus-skills
-      repo: https://github.com/enmotech/mopheus-skills.git
-      subdir: skills
-      dest: skills/mopheus-skills
-      ref: main
-    - name: eli5
-      repo: https://github.com/DreambigOu/ELI5.git
-      subdir: skills/eli5
-      dest: skills/eli5
-      ref: main
     - name: book-to-skill
       repo: https://github.com/virgiliojr94/book-to-skill.git
       subdir: .
