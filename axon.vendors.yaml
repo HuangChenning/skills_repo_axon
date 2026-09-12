@@ -1,0 +1,136 @@
+vendors:
+    - name: skill-creator
+      repo: https://github.com/anthropics/skills.git
+      subdir: skills/skill-creator
+      dest: skills/skill-creator
+      ref: main
+    - name: humanlayer-skills
+      repo: https://github.com/humanlayer/skills.git
+      subdir: plugins
+      dest: skills/humanlayer-skills
+      ref: main
+    - name: wecom-cli
+      repo: https://github.com/WecomTeam/wecom-cli.git
+      subdir: skills
+      dest: skills/wecom-cli
+      ref: main
+    - name: mopheus-skills
+      repo: https://github.com/enmotech/mopheus-skills.git
+      subdir: skills
+      dest: skills/mopheus-skills
+      ref: main
+    - name: eli5
+      repo: https://github.com/DreambigOu/ELI5.git
+      subdir: skills/eli5
+      dest: skills/eli5
+      ref: main
+    - name: book-to-skill
+      repo: https://github.com/virgiliojr94/book-to-skill.git
+      subdir: .
+      dest: skills/book-to-skill
+      ref: master
+    - name: cangjie-skill
+      repo: https://github.com/kangarooking/cangjie-skill.git
+      subdir: .
+      dest: skills/cangjie-skill
+      ref: main
+    - name: beautify-readme
+      repo: https://github.com/HuangChenning/beautify-readme.git
+      subdir: skills/beautify-readme
+      dest: skills/beautify-readme
+      ref: main
+    - name: imagegen
+      repo: https://github.com/openai/codex.git
+      subdir: codex-rs/skills/src/assets/samples/imagegen
+      dest: skills/imagegen
+      ref: main
+    - name: mattpocock-skills
+      repo: https://github.com/mattpocock/skills.git
+      subdir: skills
+      dest: skills/mattpocock-skills
+      ref: main
+    - name: huashu-design
+      repo: https://github.com/alchaincyf/huashu-design.git
+      subdir: .
+      dest: skills/huashu-design
+      ref: master
+    - name: canvas-design
+      repo: https://github.com/anthropics/skills.git
+      subdir: skills/canvas-design
+      dest: skills/canvas-design
+      ref: main
+    - name: frontend-design
+      repo: https://github.com/anthropics/skills.git
+      subdir: skills/frontend-design
+      dest: skills/frontend-design
+      ref: main
+    - name: mcp-builder
+      repo: https://github.com/anthropics/skills.git
+      subdir: skills/mcp-builder
+      dest: skills/mcp-builder
+      ref: main
+    - name: pdf
+      repo: https://github.com/anthropics/skills.git
+      subdir: skills/pdf
+      dest: skills/pdf
+      ref: main
+    - name: pptx
+      repo: https://github.com/anthropics/skills.git
+      subdir: skills/pptx
+      dest: skills/pptx
+      ref: main
+    - name: xlsx
+      repo: https://github.com/anthropics/skills.git
+      subdir: skills/xlsx
+      dest: skills/slsx
+      ref: main
+    - name: docx
+      repo: https://github.com/anthropics/skills.git
+      subdir: skills/docx
+      dest: skills/docx
+      ref: main
+    - name: claude-api
+      repo: https://github.com/anthropics/skills.git
+      subdir: skills/claude-api
+      dest: skills/claude-api
+      ref: main
+    - name: linear
+      repo: https://github.com/openai/skills.git
+      subdir: skills/.curated/linear
+      dest: skills/linear
+      ref: main
+    - name: openai-docs
+      repo: https://github.com/openai/skills.git
+      subdir: skills/.curated/
+      dest: skills/openai
+      ref: main
+    - name: Superpowers
+      repo: https://github.com/obra/superpowers.git
+      subdir: skills
+      dest: skills/Superpowers
+      ref: main
+    - name: mes-cli-terminal
+      repo: https://github.com/enmotech/mes-cli-skills.git
+      subdir: skills/mes-cli-terminal
+      dest: skills/mes-cli-terminal
+      ref: main
+    - name: awesome-design-md
+      repo: https://github.com/VoltAgent/awesome-design-md.git
+      subdir: design-md
+      dest: skills/awesome-design-md
+      ref: main
+    - name: architecture-diagram
+      repo: https://github.com/Cocoon-AI/architecture-diagram-generator.git
+      subdir: architecture-diagram
+      dest: skills/architecture-diagram
+      ref: main
+    - name: obsidian-skills
+      repo: https://github.com/kepano/obsidian-skills.git
+      subdir: skills
+      dest: skills/obsidian-skills
+      ref: main
+    - name: card-skill
+      repo: https://github.com/KKenny0/card-skill.git
+      subdir: .
+      dest: skills/card-skill
+      ref: main
