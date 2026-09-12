@@ -4,4 +4,4 @@ repo: https://github.com/openai/codex.git
 subdir: codex-rs/skills/src/assets/samples/imagegen
 ref: main
 commit: 84aa75204ad604bcf498df180d128181c89b2f0b
-synced_at: 2026-09-12T11:48:52.553624692Z
+synced_at: 2026-09-12T12:16:20.016767Z
