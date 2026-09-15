@@ -3,5 +3,5 @@ vendor: cangjie-skill
 repo: https://github.com/kangarooking/cangjie-skill.git
 subdir: .
 ref: main
-commit: 34e34bc5c7eb1c7d6cae9f84a9bcc62acb2a971b
-synced_at: 2026-09-12T12:16:11.083967Z
+commit: 3adf9e61eec96edf34055432942f2952cfd7cfd9
+synced_at: 2026-09-15T08:19:16.936933Z

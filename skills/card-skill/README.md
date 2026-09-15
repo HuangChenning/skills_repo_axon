@@ -152,7 +152,7 @@ Prefer the publishing task first, then map to an internal mode. You do not need 
 
 ## Which visual formats does card-skill support?
 
-**Stable** is for publishing, batch work, and consistency. **Studio** is for conceptual metaphor, narrative tension, and more personal expression. Both go through formal schema, renderer, capture, and `check-output`. Studio also requires a full composition contract and human visual review.
+**Stable** is for publishing, batch work, and consistency. **Studio** is for conceptual metaphor, narrative tension, and more personal expression. Both go through formal schema, renderer, capture, and `check-output`. Studio also requires a full composition contract and visual review by an image-capable host Agent.
 
 | Mode | Tier | Best for | Details |
 |---|---|---|---|
@@ -170,7 +170,7 @@ Prefer the publishing task first, then map to an internal mode. You do not need 
 
 - **One house grammar, 9 output modes:** Kenny Style across `editorial-image`, `article-diagram`, `poster`, `big`, `long`, `whiteboard`, `infograph`, `comic`, `sketchnote`
 - **Evidence-led poster fields:** current local PNG/JPEG/WebP evidence is sealed into a bounded private snapshot before browser capture, while two-to-five-step native processes occupy the layout directly—without nested-card chrome, source-path browser access, or renderer networking.
-- **Two delivery tiers:** Stable (deterministic CLI render) and Studio (full composition contract + human visual review)
+- **Two delivery tiers:** Stable (deterministic CLI render) and Studio (full composition contract + visual review by an image-capable host Agent)
 - **Kenny Style:** evidence-led composition, controlled typography, clear hierarchy, restrained spacing, fixed small-radius geometry, and Quiet Paper material
 - **Color-only tones:** `reflective` / `sharp` / `warm` / `technical`; 26 legacy design names remain explicit compatibility palettes and cannot change layout or geometry
 - **Default output:** DPR 2 PNG; a common 1080 CSS-wide canvas exports at about 2160px wide (height varies by mode and aspect)
@@ -214,6 +214,8 @@ Every mode shares Kenny Style. Quiet Paper is the material base, while content e
 
 ## From text to PNG
 
+The skill entry is a compact router: it loads source, mode, and review references only when needed. Ordinary requests proceed through local PNG delivery without a direction-selection checkpoint; only an explicit request to choose candidates pauses the workflow. The image-capable host Agent reviews the actual PNGs. Studio compositions use the same Visual Job v3 pipeline as structured modes.
+
 1. Read a URL, pasted text, open-source project brief, WeChat Reading payload, or local file.
 2. Inventory bounded evidence, freshness, and media rights before choosing a card count.
 3. Give every intended PNG one evidence responsibility and Visual Plan; open-source series adapt from one to four non-repeating cards.
@@ -242,7 +244,7 @@ Default is `--dpr 2`. Height varies by mode and aspect; do not treat every expor
 
 ### Update checks and privacy
 
-When an agent starts using card-skill, it checks GitHub for the latest stable Release. Stable CLI entry points also check defensively. After the current output is delivered, the CLI upgrades the installed copy in the background to the commit resolved from that Release, then version-reads and prepares runtime for the next use. The current render never switches mid-job. Checks are cached per install, at most once a day; concurrent renders and upgrades are serialized with install locks. Failed upgrades restore the previous copy and leave the current render unchanged. Manual update paths:
+CLI entry points check GitHub for the latest stable Release; an Agent checks explicitly only when showing a requested direction preview before rendering. After reviewed delivery, the Agent runs the supported automatic updater. Direct card.js rendering launches that update in the background itself. The updater installs the commit resolved from the Release, then version-reads and prepares runtime for the next use. The current render never switches mid-job. Checks are cached per install, at most once a day; concurrent renders and upgrades are serialized with install locks. Failed upgrades restore the previous copy and leave the current render unchanged. Manual update paths:
 
 ```bash
 # npx skills install (replace <tag> with the Release tag from the update notice)
@@ -273,7 +275,7 @@ Structured CLI can run alone:
 node scripts/card.js --input /path/to/input.json --output ~/Downloads/card.png
 ```
 
-Stable CLI modes: `big`, `long`, `whiteboard`, `poster`, `editorial-image`, `article-diagram`. Studio CLI modes: `infograph`, `comic`, `sketchnote`; they require a full `content_html` + `custom_css` composition contract and still need human visual review.
+Stable CLI modes: `big`, `long`, `whiteboard`, `poster`, `editorial-image`, `article-diagram`. Studio CLI modes: `infograph`, `comic`, `sketchnote`; they require a full `content_html` + `custom_css` composition contract and still need visual review by an image-capable host Agent.
 
 Natural-language jobs use Visual Job v3. Every artifact names its evidence, role, filename, transformation, and Visual Plan. Render candidates first:
 
@@ -340,7 +342,7 @@ You get an incomplete install missing `scripts/`, `assets/`, `schemas/`, and oth
 
 ### What is the difference between Stable and Studio?
 
-Stable modes (`big`, `poster`, `whiteboard`, most covers) use CLI structured rendering for batch work and consistency. Studio modes (`infograph`, `comic`, `sketchnote`, and complex body metaphors) require a full composition contract and still need a human look at the PNG.
+Stable modes (`big`, `poster`, `whiteboard`, most covers) use CLI structured rendering for batch work and consistency. Studio modes (`infograph`, `comic`, `sketchnote`, and complex body metaphors) require a full composition contract and still need a host Agent inspection of the PNG.
 
 ### What permissions does WeChat Reading need?
 
@@ -351,7 +353,7 @@ Install Tencent's official WeChatReading Skill separately and set `WEREAD_API_KE
 <details>
 <summary>Expand gallery</summary>
 
-<p><sub>All samples are conceptual retellings of *A Thousand Brains* (Jeff Hawkins). Reading-note samples are labeled as non-account highlights.</sub></p>
+<p><sub>Samples explore concepts from *A Thousand Brains* (Jeff Hawkins). The reading-notes sample quotes a repository-owned study note verbatim; it is neither a book quotation nor an account highlight.</sub></p>
 
 | Job | mode | What the image solves |
 |---|---|---|
@@ -362,7 +364,7 @@ Install Tencent's official WeChatReading Skill separately and set `WEREAD_API_KE
 | Long reading card | `long` | Intelligence as modeling |
 | Whiteboard | `whiteboard` | Knowing a cup |
 | Boundary model (legacy sample) | `article-diagram` | reference frame model |
-| Reading notes (conceptual) | `poster` | Highlight-style knowledge cards, not live account data |
+| Reading notes (owned source) | `poster` | Verbatim study note paired with a thought, not live account data |
 | Infograph | `infograph` | Local models to shared judgment |
 | Comic | `comic` | After touching one edge |
 | Sketchnote | `sketchnote` | Sensation, location, prediction |
@@ -383,7 +385,7 @@ Install Tencent's official WeChatReading Skill separately and set `WEREAD_API_KE
 </tr>
 <tr>
 <td><img src="assets/gallery/article-boundary-legacy.png" width="100%" alt="A Thousand Brains legacy boundary-model sample"><br><strong>article-diagram</strong> · reference frame model</td>
-<td><img src="assets/gallery/reading-notes.png" width="100%" alt="A Thousand Brains conceptual reading-notes card, not live account highlights"><br><strong>poster</strong> · reading notes (conceptual)</td>
+<td><img src="assets/gallery/reading-notes.png" width="100%" alt="Reading-notes card quoting a repository-owned study note, not a book quotation or account highlight"><br><strong>poster</strong> · reading notes (owned source)</td>
 </tr>
 <tr>
 <td><img src="assets/gallery/infograph.png" width="100%" alt="A Thousand Brains infograph: local models to shared judgment"><br><strong>infograph</strong> · local models to shared judgment</td>
@@ -406,7 +408,7 @@ It does not read arbitrary chapter text, and it will not scan an account from a 
 <table>
 <tr>
 <td width="50%"><img src="assets/gallery/reading-report.png" width="100%" alt="Reading guide sample built from real reading structure"><br><strong>Reading guide</strong></td>
-<td width="50%"><img src="assets/gallery/reading-notes.png" width="100%" alt="Conceptual notes sample with highlight and thought pairing"><br><strong>Conceptual notes</strong></td>
+<td width="50%"><img src="assets/gallery/reading-notes.png" width="100%" alt="Repository-owned study note with verbatim text and thought pairing"><br><strong>Owned study notes</strong></td>
 </tr>
 </table>
 
