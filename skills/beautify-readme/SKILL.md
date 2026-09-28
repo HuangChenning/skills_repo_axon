@@ -152,6 +152,7 @@ Read [references/readme-canvas.md](references/readme-canvas.md), [references/svg
 - Use PNG/WebP for screenshots, generated art, photo material, Archify Share Cards, and complex compositing. Use GIF only for approved motion.
 - When hybrid composition is selected, read [references/hybrid-svg-production.md](references/hybrid-svg-production.md), use the `imagegen` Skill for generation, and keep exact copy out of the generated raster layer.
 - Keep body copy, commands, tables, links, and details in Markdown.
+- When the user asks for code size or lines-of-code badges, follow the code stats badges section in [references/readme-canvas.md](references/readme-canvas.md): shields.io Markdown badges plus a workflow that publishes the line count.
 - Prefer a `1200`-unit-wide SVG `viewBox`, `width="100%"` embeds, system fonts, semantic alt text, and rounded containers.
 - Use one reusable component grammar, but vary the art direction by repository theme.
 - Let the hero absorb a real project diagram, screenshot, code fragment, output, or artifact when it makes the first screen more useful.
