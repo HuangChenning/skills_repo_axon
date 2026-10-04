@@ -3,5 +3,5 @@ vendor: book-to-skill
 repo: https://github.com/virgiliojr94/book-to-skill.git
 subdir: .
 ref: master
-commit: 80ae087784ddbc21dbbfde355fe5509631e0e322
-synced_at: 2026-09-28T09:33:23.054292Z
+commit: c108d25b0cb58e1bdc361f3de02ed9f37075152f
+synced_at: 2026-10-01T09:00:58.677401Z
