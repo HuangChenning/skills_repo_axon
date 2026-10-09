@@ -3,5 +3,5 @@ vendor: humanlayer-skills
 repo: https://github.com/humanlayer/skills.git
 subdir: plugins
 ref: main
-commit: ca7c8088db69e315a8b2deea43820270457f8f3c
-synced_at: 2026-09-28T09:33:15.716311Z
+commit: 653b6411c1f70c275a18e37673b042ff99f67ceb
+synced_at: 2026-10-09T04:17:04.895427Z
