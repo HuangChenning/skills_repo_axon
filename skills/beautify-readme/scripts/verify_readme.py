@@ -91,6 +91,27 @@ def parse_svg_attribute(opening_tag, name):
     return match.group(2) if match else None
 
 
+def is_archify_export(opening_tag):
+    """Return True when the root <svg> carries Archify's export contract markers."""
+    labelled_by = parse_svg_attribute(opening_tag, "aria-labelledby") or ""
+    return (
+        parse_svg_attribute(opening_tag, "data-layout-contract") is not None
+        and "archify-diagram-title" in labelled_by.split()
+    )
+
+
+def font_faces_are_embedded(content):
+    """Return True when every @font-face src uses only data: URIs."""
+    blocks = re.findall(r"@font-face\s*\{[^}]*\}", content)
+    if not blocks:
+        return False
+    for block in blocks:
+        urls = re.findall(r"url\(\s*['\"]?([^'\")\s]+)", block)
+        if not urls or any(not url.startswith("data:") for url in urls):
+            return False
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Dimension 1: Content architecture
 # ---------------------------------------------------------------------------
@@ -495,19 +516,21 @@ def check_svg_files(svg_files, readme_path):
         svg_open = svg_open_match.group(0) if svg_open_match else ""
         diagram_engine = parse_svg_attribute(svg_open, "data-diagram-engine")
         readme_preset = parse_svg_attribute(svg_open, "data-readme-preset")
+        archify_export = is_archify_export(svg_open)
         vb_match = re.search(r'viewBox=["\'](\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)["\']', content)
         if vb_match:
             vb_width = float(vb_match.group(3))
+            # Archify sizes its own reader-fit canvas, so any positive width is accepted.
             approved_width = abs(vb_width - 1200) < 1 or (
                 abs(vb_width - 960) < 1
                 and diagram_engine == "editorial-static"
                 and readme_preset == "doc-inline"
-            )
+            ) or (archify_export and vb_width > 0)
             results.append(CheckResult(
                 f"2.3 Approved viewBox width: {basename}",
                 approved_width,
                 (
-                    f"width={vb_width}; expected 1200, or marked editorial-static doc-inline at 960"
+                    f"width={vb_width}; expected 1200, marked editorial-static doc-inline at 960, or an Archify export"
                     if not approved_width else ""
                 )
             ))
@@ -539,7 +562,11 @@ def check_svg_files(svg_files, readme_path):
             fragile.append("<script>")
         if "foreignObject" in content:
             fragile.append("foreignObject")
-        if re.search(r'@font-face|@import', content):
+        if "@import" in content:
+            fragile.append("@import")
+        if "@font-face" in content and not (
+            archify_export and font_faces_are_embedded(content)
+        ):
             fragile.append("remote font")
         if re.search(r'https?://[^"\'>\s]+\.(woff2?|ttf|otf|css)', content):
             fragile.append("external font/css")
@@ -680,6 +707,46 @@ def find_editorial_static_assets(readme, readme_path):
     return assets
 
 
+def archify_ir_path(asset):
+    """Return the retained Archify IR path for a published diagram asset."""
+    return asset.parent.parent / "source" / f"{asset.stem}.archify.json"
+
+
+def is_archify_asset(asset):
+    """Return True for Archify exports: marked SVG roots or assets with a retained IR."""
+    if archify_ir_path(asset).is_file():
+        return True
+    if asset.suffix.lower() != ".svg" or not asset.is_file():
+        return False
+    content = asset.read_text(encoding="utf-8", errors="replace")
+    svg_open = re.search(r"<svg\b[^>]*>", content, re.IGNORECASE | re.DOTALL)
+    return bool(svg_open) and is_archify_export(svg_open.group(0))
+
+
+def check_archify_diagrams(readme, readme_path):
+    """Require a retained JSON IR beside every published Archify export."""
+    assets = [
+        asset for asset in find_editorial_static_assets(readme, readme_path)
+        if is_archify_asset(asset)
+    ]
+    if not assets:
+        return [CheckResult("4.13 Archify exports", True, "No Archify exports found (N/A)")]
+    results = []
+    for asset in assets:
+        ir_path = archify_ir_path(asset)
+        valid = False
+        detail = f"Missing {ir_path}"
+        if ir_path.is_file():
+            try:
+                ir = json.loads(ir_path.read_text(encoding="utf-8"))
+                valid = isinstance(ir, dict) and bool(ir.get("diagram_type"))
+                detail = "" if valid else "IR must be an object with diagram_type"
+            except (OSError, UnicodeError, json.JSONDecodeError) as error:
+                detail = str(error)[:120]
+        results.append(CheckResult(f"4.13 Archify IR retained: {asset.name}", valid, detail))
+    return results
+
+
 def path_is_within(path, root):
     """Compatibility helper for checking repository-relative evidence paths."""
     try:
@@ -692,7 +759,10 @@ def path_is_within(path, root):
 def check_editorial_static_diagrams(readme, readme_path):
     """Validate editorial-static asset markers, manifests, and source evidence."""
     results = []
-    assets = find_editorial_static_assets(readme, readme_path)
+    assets = [
+        asset for asset in find_editorial_static_assets(readme, readme_path)
+        if not is_archify_asset(asset)
+    ]
     if not assets:
         return [CheckResult(
             "4.8 Editorial-static assets",
@@ -1057,7 +1127,11 @@ def main():
     # Dimension 4: Diagram integrity
     print("Dimension 4 — Diagram integrity")
     print("-" * 50)
-    d4 = check_code_fences(readme) + check_editorial_static_diagrams(readme, readme_path)
+    d4 = (
+        check_code_fences(readme)
+        + check_editorial_static_diagrams(readme, readme_path)
+        + check_archify_diagrams(readme, readme_path)
+    )
     all_results.extend(d4)
     for r in d4:
         print(r)

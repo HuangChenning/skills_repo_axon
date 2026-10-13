@@ -178,8 +178,8 @@ Read [references/readme-canvas.md](references/readme-canvas.md), [references/svg
 - Use SVG for the hero, section banners, deterministic design modules, and GitHub-native diagrams.
 - Use code-fence diagram engines (PlantUML, Vega, infographic, canvas, architecture, infocard) for Markdown Viewer enhanced diagrams. Read [references/diagram-engines.md](references/diagram-engines.md) for the engine selection guide and critical syntax rules.
 - For GitHub-native code logic and repository structure diagrams, use **editorial-static** when the need is flowchart, dependency, class, ER, database schema, tree, timeline, or swimlane. Freeze `type / format / size / detail / audience`, keep the result within its complexity budget, publish under `assets/readme/diagrams/`, and retain the evidence/fidelity manifest under `assets/readme/source/`. Read [references/editorial-static-diagrams.md](references/editorial-static-diagrams.md) before drawing.
-- For polished GitHub-native system maps (architecture, workflow, sequence, dataflow, lifecycle), use the optional **Archify** production branch when the Archify skill/CLI is available: author typed JSON → `validate` → `deliver` → export a Share Card or static PNG/SVG → embed the image and keep the JSON (and optional HTML) under `assets/readme/source/`. Do not embed interactive Archify HTML as the sole GitHub image.
-- Use PNG/WebP for screenshots, generated art, photo material, Archify Share Cards, and complex compositing. Use GIF only for approved motion.
+- For polished GitHub-native system maps (architecture, workflow, sequence, dataflow, lifecycle), use the optional **Archify 3.x** production branch when the Archify skill/CLI is available: author typed JSON → `finalize` → open the checked HTML and use **Export** (dual-theme SVG or full-diagram PNG) → embed the image and keep the JSON (and optional HTML) under `assets/readme/source/`. Do not embed interactive Archify HTML as the sole GitHub image. Carry one update line into the final response when the `finalize` receipt reports `update.noticeRequired`; never update Archify on the user's behalf.
+- Use PNG/WebP for screenshots, generated art, photo material, Archify PNG exports, and complex compositing. Use GIF only for approved motion.
 - When hybrid composition is selected, read [references/hybrid-svg-production.md](references/hybrid-svg-production.md), use the `imagegen` Skill for generation, and keep exact copy out of the generated raster layer.
 - Keep body copy, commands, tables, links, and details in Markdown.
 - When the user asks for code size or lines-of-code badges, follow the code stats badges section in [references/readme-canvas.md](references/readme-canvas.md): shields.io Markdown badges plus a workflow that publishes the line count.
@@ -187,7 +187,7 @@ Read [references/readme-canvas.md](references/readme-canvas.md), [references/svg
 - Use one reusable component grammar, but vary the art direction by repository theme.
 - Let the hero absorb a real project diagram, screenshot, code fragment, output, or artifact when it makes the first screen more useful.
 
-When a diagram engine exports an SVG or PNG for GitHub-native embedding, apply the frozen project palette rather than the engine's house theme where possible, use system fonts, and inspect the output for `<script>`, `foreignObject`, remote resources, and clipped labels. For Archify exports, choose the closest visual preset/theme and keep the IR source editable.
+When a diagram engine exports an SVG or PNG for GitHub-native embedding, apply the frozen project palette rather than the engine's house theme where possible, use system fonts, and inspect the output for `<script>`, `foreignObject`, remote resources, and clipped labels. For Archify exports, choose the closest visual preset/theme, accept its embedded JetBrains Mono subset instead of system fonts, and keep the IR source editable.
 
 Do not rasterize the whole README. Avoid decorative borders and heavy shadows unless the theme genuinely calls for them.
 
@@ -211,7 +211,7 @@ python3 scripts/verify_readme.py /path/to/repository/README.md
 - **Content architecture** — sections present, install path, Markdown/HTML alt text, no TOC-first, proof-stage ordering, and complex mechanism visualization
 - **Visual system** — SVG viewBox/title/desc, no fragile features, no pure black, system fonts
 - **Quality bar** — no AI filler phrases, no filler data, image references valid
-- **Diagram engine syntax and static provenance** — PlantUML start/end, Vega JSON validity, infographic syntax, plus editorial-static manifest/preset/evidence checks; Archify validate/deliver and static export checks remain manual
+- **Diagram engine syntax and static provenance** — PlantUML start/end, Vega JSON validity, infographic syntax, plus editorial-static manifest/preset/evidence checks; Archify exports get width/font exemptions and a retained-IR check (`source/<name>.archify.json`); `finalize` receipts remain manual
 
 If any programmatic check fails, fix the gap and re-run. Do not declare success with known failures.
 
@@ -252,7 +252,7 @@ If any dimension has failures, the overall result is FAIL. Fix the gaps and re-r
 - In asset-only mode, render and inspect every requested asset at GitHub content width; for GIFs, inspect entry, settled hold, exit, and loop boundary.
 - For code-fence diagrams, verify they render correctly in a Markdown Viewer and check syntax against the rules in [references/diagram-engines.md](references/diagram-engines.md).
 - For editorial-static diagrams, confirm the manifest matches the published asset, repository evidence resolves, the fidelity ledger reports meaningful cuts, and the main path remains readable at both widths.
-- For Archify diagrams, confirm `validate`/`deliver` passed, the published file is a static PNG/SVG (not HTML-only), the IR source is retained, and labels remain legible at GitHub width.
+- For Archify diagrams, confirm `finalize` exited 0 (covering validate, deliver, check, and browser-check), the published file is an exported static SVG/PNG (not HTML-only), the IR source is retained, and labels remain legible at GitHub width.
 - Report what changed, what remains intentionally plain, and which files were deliberately left untouched.
 
 ### 9. Hand off safely
@@ -269,11 +269,11 @@ When the README needs structured diagrams, pick the engine that matches the job.
 | Module/package/build relationships | Editorial-static — `dependency` | static SVG/PNG + manifest | GitHub-native |
 | Class, ER, or physical database structure | Editorial-static — `class` / `er` / `db-schema` | static SVG/PNG + manifest | GitHub-native |
 | Repository hierarchy, events, or role handoffs | Editorial-static — `tree` / `timeline` / `swimlane` | static SVG/PNG + manifest | GitHub-native |
-| Polished runtime / service architecture | Archify — `architecture` | PNG/SVG Share Card | GitHub-native |
-| CI/CD, approvals, tool-call workflows | Archify — `workflow` | PNG/SVG Share Card | GitHub-native |
-| API / cache / auth call traces | Archify — `sequence` | PNG/SVG Share Card | GitHub-native |
-| Pipelines, lineage, sensitivity boundaries | Archify — `dataflow` | PNG/SVG Share Card | GitHub-native |
-| States, retries, waits, outcomes | Archify — `lifecycle` | PNG/SVG Share Card | GitHub-native |
+| Polished runtime / service architecture | Archify — `architecture` | exported SVG/PNG | GitHub-native |
+| CI/CD, approvals, tool-call workflows | Archify — `workflow` | exported SVG/PNG | GitHub-native |
+| API / cache / auth call traces | Archify — `sequence` | exported SVG/PNG | GitHub-native |
+| Pipelines, lineage, sensitivity boundaries | Archify — `dataflow` | exported SVG/PNG | GitHub-native |
+| States, retries, waits, outcomes | Archify — `lifecycle` | exported SVG/PNG | GitHub-native |
 | Software modeling (class, sequence, activity, state, component) | PlantUML — `uml` | ` ```plantuml ` | Both |
 | Cloud architecture (AWS, Azure, GCP, K8s) | PlantUML — `cloud` | ` ```plantuml ` | Both |
 | Network topology | PlantUML — `network` | ` ```plantuml ` | Both |
@@ -344,7 +344,7 @@ Use $beautify-readme to inspect this repository and add a GitHub-native editoria
 ```
 
 ```text
-Use $beautify-readme to add a GitHub-native How it works diagram via Archify: validate the architecture IR, export a Share Card PNG, and keep the JSON source.
+Use $beautify-readme to add a GitHub-native How it works diagram via Archify: finalize the architecture IR, export the diagram SVG, and keep the JSON source.
 ```
 
 ```text

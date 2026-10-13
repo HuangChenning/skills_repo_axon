@@ -27,11 +27,11 @@ Structured diagram engines produce maintainable, semantically editable visuals t
 | Module, package, or build dependencies | **Editorial-static** — `dependency` | static SVG/PNG + manifest |
 | Class, domain entity, or physical schema structure | **Editorial-static** — `class` / `er` / `db-schema` | static SVG/PNG + manifest |
 | Repository hierarchy, timeline, or handoffs | **Editorial-static** — `tree` / `timeline` / `swimlane` | static SVG/PNG + manifest |
-| Runtime / service architecture (polished GitHub embed) | **Archify** — `architecture` | static PNG/SVG Share Card |
-| CI/CD, approvals, tool-call workflows | **Archify** — `workflow` | static PNG/SVG Share Card |
-| API call chains, cache miss, auth traces | **Archify** — `sequence` | static PNG/SVG Share Card |
-| Pipelines, lineage, PII boundaries | **Archify** — `dataflow` | static PNG/SVG Share Card |
-| States, retries, waits, terminal outcomes | **Archify** — `lifecycle` | static PNG/SVG Share Card |
+| Runtime / service architecture (polished GitHub embed) | **Archify** — `architecture` | exported SVG/PNG + JSON IR |
+| CI/CD, approvals, tool-call workflows | **Archify** — `workflow` | exported SVG/PNG + JSON IR |
+| API call chains, cache miss, auth traces | **Archify** — `sequence` | exported SVG/PNG + JSON IR |
+| Pipelines, lineage, PII boundaries | **Archify** — `dataflow` | exported SVG/PNG + JSON IR |
+| States, retries, waits, terminal outcomes | **Archify** — `lifecycle` | exported SVG/PNG + JSON IR |
 | Flowchart / process flow | PlantUML — activity diagram | ` ```plantuml ` |
 | Sequence diagram (UML / editable fence) | PlantUML — sequence | ` ```plantuml ` |
 | State machine (UML / editable fence) | PlantUML — statechart | ` ```plantuml ` |
@@ -73,9 +73,9 @@ Structured diagram engines produce maintainable, semantically editable visuals t
 | --- | --- |
 | The diagram's job is a polished "How it works" / runtime map for GitHub | The reader needs an editable Markdown Viewer code fence |
 | Edge routing, main-path emphasis, and label clearance matter more than vendor icons | You need AWS/Azure/GCP/K8s stencil icons → PlantUML cloud |
-| You want typed JSON IR, validation receipts, and reproducible Share Cards | You need ArchiMate, BPMN, Cisco, or security stencils → PlantUML domain engines |
+| You want typed JSON IR, a `finalize` receipt, and a reproducible exported SVG/PNG | You need ArchiMate, BPMN, Cisco, or security stencils → PlantUML domain engines |
 | Scope is architecture / workflow / sequence / dataflow / lifecycle | You need charts, KPI boards, SWOT, or knowledge cards → Vega / Infographic / Infocard |
-| 8–12 primary nodes with one clear main path | Compact hero-integrated illustration → hand-authored SVG |
+| One bounded view with one clear main path | Compact hero-integrated illustration → hand-authored SVG |
 
 Do not use Archify for heroes, section banners, badges, ImageGen subjects, or decorative motion. Those stay on the SVG / hybrid / GIF paths in this skill.
 
@@ -102,13 +102,16 @@ This branch does not automatically infer program behavior. The Agent remains res
 
 ## Archify (optional system maps)
 
-[Archify](https://github.com/tt-a1i/archify) is an external agent skill (`tt-a1i/archify`) that turns a typed JSON IR into a self-contained interactive HTML diagram, then exports static PNG, SVG, WebM, and 1200×630 Share Cards. This skill treats Archify as a **production aid for technical system maps**, not as a README layout system.
+[Archify](https://github.com/tt-a1i/archify) is an external agent skill (`tt-a1i/archify`) that turns a typed JSON IR into a checked, self-contained interactive HTML diagram. Static PNG, JPEG, WebP, dual-theme SVG, and trace WebM come from that HTML's **Export** menu. This skill treats Archify as a **production aid for technical system maps**, not as a README layout system.
+
+This branch targets **Archify 3.x** (verified against v3.0.1). The 2.x `validate` → `deliver` handoff, guided story views, and ordinary 1200×630 Share Card exports no longer describe the current tool.
 
 ### Prerequisites
 
 - Archify skill available to the agent (`npx skills add tt-a1i/archify` or an installed local copy), **or** the user explicitly asks to use Archify and provides access.
-- Node.js available for `node archify/bin/archify.mjs …`.
-- If Archify is unavailable, fall back to PlantUML, Architecture HTML, or hand-authored SVG and say so briefly.
+- Node.js available for `node <archify>/bin/archify.mjs …`, where `<archify>` is the installed skill directory.
+- A browser the agent can drive (or the user) to open the checked HTML and use **Export**. The CLI has no headless export command.
+- If Archify is unavailable or reports a version below 3.0, fall back to editorial-static, PlantUML, or hand-authored SVG and say so briefly.
 
 ### Diagram types
 
@@ -118,49 +121,63 @@ This branch does not automatically infer program behavior. The Agent remains res
 | `workflow` | CI/CD, approvals, agent tool calls, runbooks |
 | `sequence` | Request lifecycles, cache fallback, auth traces |
 | `dataflow` | Pipelines, lineage, sensitivity boundaries |
-| `lifecycle` | States, retries, waits, terminal outcomes |
+| `lifecycle` | States, retries, waits, terminal outcomes (author new diagrams with lifecycle schema v2) |
 
 ### README production branch
 
 Use this branch only when the selected visual is a system map of one of the five types above.
 
 1. Freeze the project story and visual system (palette, motif, composition) as usual.
-2. Decide scope: one bounded view, 8–12 primary nodes, one primary path; put supporting detail in cards or Markdown, not extra edges.
-3. Invoke the Archify skill (or author Archify JSON following its schemas) for the chosen type. Prefer `meta.quality_profile: "showcase"` unless the user wants a denser `standard` map.
+2. Decide the README job: one bounded view with one obvious main path. Archify sets no node or edge quota; README legibility at `900px` and `360px` is this skill's constraint, so move secondary detail into `cards` or Markdown.
+3. Follow the Archify skill's own authoring path for the chosen type (schema, authoring defaults, matching example). Do not restate its schema here; read it from the installed version.
 4. Align presentation to the frozen system where Archify allows it:
-   - pick `meta.visual_preset` (`classic`, `signal-flow`, `blueprint`, `editorial`) that fits the project tone;
-   - choose dark or light theme to match the README surface;
-   - omit `meta.animation` unless the user opted into motion for a demo asset.
-5. Validate, then deliver:
+   - `meta.visual_preset`: `classic`, `signal-flow`, `blueprint`, or `editorial`, whichever fits the project tone;
+   - `meta.locale: "zh-CN"` for a Simplified Chinese README (`en` is the default);
+   - `meta.quality_profile: "showcase"` unless the user asks for a dense `standard` map;
+   - omit `meta.animation` unless the user opted into motion.
+5. When the map claims to reflect this repository, attach `meta.repository` and node `sources`, and pass `--repo-root`. In 3.x every diagram type accepts repository evidence.
+6. Run Archify inside its per-request working folder (`.archify/<timestamp-slug>/` by default; keep it out of the commit) and finalize in one command:
 
    ```bash
-   node archify/bin/archify.mjs validate <type> <candidate.json> --quality showcase --json
-   node archify/bin/archify.mjs deliver <type> <candidate.json> <output.html> --quality showcase --json
+   node <archify>/bin/archify.mjs finalize <type> <candidate.json> <output.html> --quality showcase --json
+   # repository-backed:
+   node <archify>/bin/archify.mjs finalize <candidate.json> <output.html> --repo-root . --quality showcase --json
    ```
 
-6. Export a GitHub-safe static asset from the verified viewer (prefer **Copy Share Card** / diagram PNG or SVG at 1200×630 when the diagram is a README proof module). Do not embed the interactive HTML as the sole GitHub README image — GitHub will not run it as a diagram.
-7. Save under the project assets tree, for example:
+   A passing receipt covers `validate`, `deliver`, strict `check`, and real-browser `browser-check`. A non-zero exit is never success: repair the failed gate under Archify's delivery contract and its repair limit, then rerun the complete `finalize`.
+7. Open the checked HTML and use **Export** for the published asset:
+   - **Download SVG** (dual-theme) for a crisp, scalable embed;
+   - **full-diagram PNG** when the SVG is too heavy or a raster is required;
+   - **Route Share Card** only when the README section is about one real routed path, after a Route Probe resolves.
+
+   Canonical exports strip viewer state (focus, route, camera, overlays), so the published image is the whole authored diagram.
+8. Copy the export and its source into the README assets tree:
 
    ```text
    assets/readme/
-   ├── how-it-works.png          # published embed (or .svg)
+   ├── diagrams/
+   │   └── how-it-works.svg              # published embed (or .png)
    └── source/
-       ├── how-it-works.json     # Archify IR (editable)
-       └── how-it-works.html     # optional interactive companion
+       ├── how-it-works.archify.json     # Archify IR (editable)
+       └── how-it-works.html             # optional interactive companion
    ```
 
-8. Embed the static image in Markdown with meaningful alt text. Optionally link the HTML companion for readers who want search, route probe, or presentation mode.
-9. Inspect at ~900px and ~360px widths; check clipped labels, contrast, and that the frozen project palette still reads as native (or note intentional Archify preset styling).
+   `verify_readme.py` recognizes Archify exports by the SVG root markers or by the sibling `source/<name>.archify.json`, exempts them from the 1200-unit width and editorial manifest rules, accepts only `data:` font sources, and fails when the IR is missing. Keep the working folder (`.archify/`) out of git.
+
+9. Embed the static image with meaningful alt text. Optionally link the HTML companion for readers who want search, Route, Lens, or presentation mode.
+10. Inspect at `900px` and `360px`; check clipped labels, contrast in both GitHub themes, and that the chosen preset still reads as native to the project.
 
 ### Integration rules
 
-- **Opt-in production path.** Default remains hand-authored SVG or the fence engines below. Use Archify when the user asks for a system/architecture/workflow map, when layout quality is the bottleneck, or when you explicitly choose this branch and can run its CLI.
-- **Beautify-readme owns README placement.** Archify does not decide hero structure, section order, or copy. Keep body diagrams below the fold's proof area when they explain mechanism.
-- **Static embed for GitHub-native.** Publish PNG or SVG. Keep JSON (+ optional HTML) as source. Interactive HTML may be linked, never required to understand the README.
+- **Opt-in production path.** Default remains editorial-static, hand-authored SVG, or the fence engines below. Use Archify when the user asks for a system/architecture/workflow map, when layout quality is the bottleneck, or when you explicitly choose this branch and can run its CLI.
+- **Beautify-readme owns README placement.** Archify does not decide hero structure, section order, or copy. Keep body diagrams below the proof area when they explain mechanism.
+- **Static embed for GitHub-native.** Publish the exported SVG or PNG. Keep JSON (+ optional HTML) as source. Interactive HTML may be linked, never required to understand the README.
+- **Embedded font exception.** Archify 3.x SVG and HTML embed a JetBrains Mono subset (about 96 KB). Accept it for Archify exports instead of applying this skill's system-font rule; it is self-contained, not a remote font.
 - **Do not invent topology.** Prefer repository evidence; do not add services, edges, or owners the codebase does not support.
-- **Repair locally.** On validation failure, change only the diagnosed subject using Archify's `supportedFixes`; do not rewrite the whole diagram or fall back to a different engine mid-repair unless Archify is unavailable.
-- **Motion stays opt-in.** Archify WebM / trace animation follows the same gate as GIF in this skill: only when the user asks for meaningful motion. GitHub README motion still prefers GIF + static fallback when playback must work on github.com itself.
-- **Palette honesty.** Prefer Archify presets closest to the frozen system. If the house theme still clashes, crop to a Share Card that sits inside an SVG frame using project colors, or fall back to PlantUML / hand SVG with the project palette.
+- **Repair through finalize.** Edit only the connected neighborhood a failed gate names, then rerun `finalize`. Do not switch engines mid-repair unless Archify is unavailable.
+- **Motion stays opt-in.** Archify trace WebM follows the same gate as GIF in this skill. GitHub README motion still prefers GIF + static fallback when playback must work on github.com.
+- **Palette honesty.** Prefer the preset closest to the frozen system. If it still clashes, frame the exported image inside a project-colored SVG or fall back to editorial-static / PlantUML with the project palette.
+- **Update reminders.** When a `finalize` receipt reports `update.noticeRequired`, carry one update line into the final response. Never install or update Archify on the user's behalf; snooze or ignore only on explicit request.
 
 ### What Archify does not replace
 
@@ -415,7 +432,7 @@ Spatial node-based diagrams with free x/y positioning. Obsidian Canvas compatibl
 
 Layered system architecture diagrams using HTML/CSS templates with color-coded tiers and grid layouts. Best for technology stacks, microservices topology, and multi-tier application design **inside Markdown Viewer**.
 
-For a polished **GitHub-native** runtime / service map with validated layout and Share Card export, prefer the [Archify](#archify-optional-system-maps) branch instead of this HTML template.
+For a polished **GitHub-native** runtime / service map with validated layout and static SVG/PNG export, prefer the [Archify](#archify-optional-system-maps) branch instead of this HTML template.
 
 ### Critical rules
 
@@ -544,7 +561,7 @@ Editorial-style information cards with magazine-quality typography. Best for kno
 | Engine | Fence / output | Top mistakes to avoid |
 | --- | --- | --- |
 | Editorial-static | static SVG/PNG + `.diagram.json` manifest | Missing source evidence; silent omissions; over-budget topology; preset/asset mismatch; remote fonts |
-| Archify | JSON IR → HTML → PNG/SVG Share Card | Embedding interactive HTML as the only GitHub image; inventing topology; skipping `validate`/`deliver`; using Archify for heroes or charts |
+| Archify | JSON IR → `finalize` → HTML → exported SVG/PNG | Embedding interactive HTML as the only GitHub image; inventing topology; treating a non-zero `finalize` as success; using 2.x `validate`/`deliver`/Share Card steps; using Archify for heroes or charts |
 | PlantUML (all) | ` ```plantuml ` | Using ` ```text ` instead of ` ```plantuml `; missing `@startuml`/`@enduml` |
 | Vega-Lite | ` ```vega-lite ` | Missing `$schema`; invalid JSON (trailing commas, unquoted keys); wrong field casing |
 | Vega | ` ```vega ` | Same as Vega-Lite |

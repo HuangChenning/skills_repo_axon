@@ -119,7 +119,7 @@ Prefer a simplified version of a real architecture, relationship, code sample, o
 
 Hand-author the SVG when the visual is compact, tightly integrated with the hero, or depends on a project-specific composition. Exact coordinates are often the simplest maintainable choice for a few boxes, a short flow, or an illustrative proof layer.
 
-When relationship-heavy diagrams make edge routing, grouping, and label wrapping the dominant work, a structured diagram engine may be used. Read [diagram-engines.md](diagram-engines.md) for the full engine catalog and critical syntax rules. For polished runtime architecture, workflow, sequence, data-flow, or lifecycle maps destined for GitHub, prefer the optional **Archify** production branch when its skill/CLI is available: validate the typed JSON, deliver HTML, export a Share Card or static PNG/SVG, and keep the IR under `assets/readme/source/`. For generated diagram output:
+When relationship-heavy diagrams make edge routing, grouping, and label wrapping the dominant work, a structured diagram engine may be used. Read [diagram-engines.md](diagram-engines.md) for the full engine catalog and critical syntax rules. For polished runtime architecture, workflow, sequence, data-flow, or lifecycle maps destined for GitHub, prefer the optional **Archify** production branch when its skill/CLI is available: run `finalize` on the typed JSON, export SVG or PNG from the checked HTML, and keep the IR under `assets/readme/source/`. For generated diagram output:
 
 - apply the frozen project palette rather than the engine's house theme where possible (for Archify, pick the closest visual preset/theme);
 - use system fonts and disable remote font imports or external asset references;

@@ -218,5 +218,76 @@ class EditorialStaticVerificationTests(unittest.TestCase):
         self.assertFalse(width_result.passed)
 
 
+ARCHIFY_SVG_TEMPLATE = """\
+<svg viewBox="0 0 795 652" data-layout-contract="readable-v2" role="img"
+     aria-labelledby="archify-diagram-title archify-diagram-description">
+  <style>@font-face {{ font-family: 'JetBrains Mono'; src: url({font_src}) format('woff2'); }}</style>
+  <title id="archify-diagram-title">Flow</title>
+  <desc id="archify-diagram-description">Workflow export.</desc>
+</svg>
+"""
+
+
+class ArchifyExportVerificationTests(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.root = Path(self.tempdir.name)
+        self.readme = self.root / "README.md"
+        self.readme.write_text("", encoding="utf-8")
+
+    def tearDown(self):
+        self.tempdir.cleanup()
+
+    def svg_results(self, font_src, template=ARCHIFY_SVG_TEMPLATE):
+        svg = self.root / "flow.svg"
+        svg.write_text(template.format(font_src=font_src), encoding="utf-8")
+        results = verify_readme.check_svg_files([str(svg)], self.readme)
+        return {result.name.split(":")[0]: result for result in results}
+
+    def test_archify_export_with_embedded_font_passes(self):
+        results = self.svg_results("data:font/woff2;base64,AAAA")
+        self.assertTrue(results["2.3 Approved viewBox width"].passed)
+        self.assertTrue(results["2.6 No fragile SVG features"].passed)
+
+    def test_archify_export_with_remote_font_fails(self):
+        results = self.svg_results("https://example.com/font.woff2")
+        self.assertFalse(results["2.6 No fragile SVG features"].passed)
+
+    def test_embedded_font_without_archify_markers_fails(self):
+        template = ARCHIFY_SVG_TEMPLATE.replace(
+            'data-layout-contract="readable-v2" ', ""
+        )
+        results = self.svg_results("data:font/woff2;base64,AAAA", template)
+        self.assertFalse(results["2.3 Approved viewBox width"].passed)
+        self.assertFalse(results["2.6 No fragile SVG features"].passed)
+
+    def write_published_export(self):
+        diagram_dir = self.root / "assets" / "readme" / "diagrams"
+        source_dir = self.root / "assets" / "readme" / "source"
+        diagram_dir.mkdir(parents=True)
+        source_dir.mkdir(parents=True)
+        (diagram_dir / "flow.svg").write_text(
+            ARCHIFY_SVG_TEMPLATE.format(font_src="data:font/woff2;base64,AAAA"),
+            encoding="utf-8",
+        )
+        readme = "![Flow](assets/readme/diagrams/flow.svg)\n"
+        self.readme.write_text(readme, encoding="utf-8")
+        return source_dir, readme
+
+    def test_archify_export_skips_editorial_manifest_and_requires_ir(self):
+        source_dir, readme = self.write_published_export()
+        editorial = verify_readme.check_editorial_static_diagrams(readme, self.readme)
+        self.assertTrue(all(result.passed for result in editorial))
+        archify = verify_readme.check_archify_diagrams(readme, self.readme)
+        self.assertFalse(archify[0].passed)
+
+        (source_dir / "flow.archify.json").write_text(
+            json.dumps({"schema_version": 2, "diagram_type": "workflow"}),
+            encoding="utf-8",
+        )
+        archify = verify_readme.check_archify_diagrams(readme, self.readme)
+        self.assertTrue(all(result.passed for result in archify))
+
+
 if __name__ == "__main__":
     unittest.main()

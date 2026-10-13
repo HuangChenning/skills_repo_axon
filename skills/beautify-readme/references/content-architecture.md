@@ -66,6 +66,6 @@ Keep compatibility, known issues, and contribution details visible when they aff
 
 Code-fence diagrams (PlantUML, Vega, infographic, canvas, architecture, infocard) belong in the body, not the hero. Use them where a structured visual explains a mechanism, flow, or relationship more clearly than prose. They are editable in the Markdown source and re-render on every view in a Markdown Viewer.
 
-Archify system maps also belong in the body (typically under "How it works" / mechanism), never as a replacement for the hero title system. For GitHub-native readers, embed the exported Share Card or static PNG/SVG; optionally link the interactive HTML companion. Keep the Archify JSON IR as source.
+Archify system maps also belong in the body (typically under "How it works" / mechanism), never as a replacement for the hero title system. For GitHub-native readers, embed the SVG or PNG exported from the checked HTML; optionally link the interactive HTML companion. Keep the Archify JSON IR as source.
 
 Do not replace a hero SVG with a code-fence diagram or an Archify HTML file — the hero must render on github.com, and code fences / interactive HTML only work outside GitHub's image embeds. If a body diagram must also work on GitHub, export it as a static SVG or PNG and embed the image file instead.
