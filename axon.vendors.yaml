@@ -107,7 +107,7 @@ vendors:
     - name: Superpowers
       repo: https://github.com/obra/superpowers.git
       subdir: skills
-      dest: skills/Superpowers
+      dest: skills/superpowers
       ref: main
     - name: mes-cli-terminal
       repo: https://github.com/enmotech/mes-cli-skills.git

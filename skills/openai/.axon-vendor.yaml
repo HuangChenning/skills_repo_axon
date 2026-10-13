@@ -4,4 +4,4 @@ repo: https://github.com/openai/skills.git
 subdir: skills/.curated/
 ref: main
 commit: 972cb867affac58fda9afa76bb1a19b399a278cf
-synced_at: 2026-10-13T15:50:45.033421Z
+synced_at: 2026-10-13T16:01:50.143175Z

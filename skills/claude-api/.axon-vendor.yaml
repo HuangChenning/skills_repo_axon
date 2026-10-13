@@ -4,4 +4,4 @@ repo: https://github.com/anthropics/skills.git
 subdir: skills/claude-api
 ref: main
 commit: dbd4588f9e1033efb41dad4bef2f7947c8993d44
-synced_at: 2026-10-13T15:50:41.676741Z
+synced_at: 2026-10-13T16:01:46.880898Z
