@@ -3,5 +3,5 @@ vendor: claude-api
 repo: https://github.com/anthropics/skills.git
 subdir: skills/claude-api
 ref: main
-commit: 683bc88e56f3e09ba94f7055977f3d3aa499f202
-synced_at: 2026-10-06T15:07:02.839862Z
+commit: dbd4588f9e1033efb41dad4bef2f7947c8993d44
+synced_at: 2026-10-10T11:12:44.99877Z

@@ -2,19 +2,20 @@
 
 Structured diagram engines produce maintainable, semantically editable visuals that render inline in Markdown Viewer. For GitHub-native context, use the engine to generate the diagram, export a static SVG or PNG, and embed the image file. For Markdown Viewer enhanced context, write the code fence directly in the README.
 
-**Archify** is an optional production skill for polished, validated system maps. It is not a Markdown code fence. Use it when a README needs a GitHub-ready architecture, workflow, sequence, data-flow, or lifecycle diagram with stronger layout judgment than hand-authored SVG or generic PlantUML. Read [Archify](#archify-optional-system-maps) before choosing it.
+**Editorial-static** is the built-in GitHub-native branch for source-backed code logic and repository structure diagrams. It produces static SVG/PNG plus a provenance/fidelity manifest. **Archify** remains an optional external production skill for polished, validated system maps. Neither is a Markdown code fence.
 
 ## Table of contents
 
 1. [Engine selection guide](#engine-selection-guide)
-2. [Archify (optional system maps)](#archify-optional-system-maps)
-3. [PlantUML-based engines](#plantuml-based-engines)
-4. [Vega / Vega-Lite](#vega--vega-lite)
-5. [Infographic](#infographic)
-6. [Canvas (JSON)](#canvas-json)
-7. [Architecture (HTML/CSS)](#architecture-htmlcss)
-8. [Infocard (HTML/CSS)](#infocard-htmlcss)
-9. [Critical syntax rules summary](#critical-syntax-rules-summary)
+2. [Editorial-static (GitHub-native code diagrams)](#editorial-static-github-native-code-diagrams)
+3. [Archify (optional system maps)](#archify-optional-system-maps)
+4. [PlantUML-based engines](#plantuml-based-engines)
+5. [Vega / Vega-Lite](#vega--vega-lite)
+6. [Infographic](#infographic)
+7. [Canvas (JSON)](#canvas-json)
+8. [Architecture (HTML/CSS)](#architecture-htmlcss)
+9. [Infocard (HTML/CSS)](#infocard-htmlcss)
+10. [Critical syntax rules summary](#critical-syntax-rules-summary)
 
 ---
 
@@ -22,6 +23,10 @@ Structured diagram engines produce maintainable, semantically editable visuals t
 
 | Use case | Engine | Code fence / output |
 | --- | --- | --- |
+| Code decisions, guards, and branches | **Editorial-static** — `flowchart` | static SVG/PNG + manifest |
+| Module, package, or build dependencies | **Editorial-static** — `dependency` | static SVG/PNG + manifest |
+| Class, domain entity, or physical schema structure | **Editorial-static** — `class` / `er` / `db-schema` | static SVG/PNG + manifest |
+| Repository hierarchy, timeline, or handoffs | **Editorial-static** — `tree` / `timeline` / `swimlane` | static SVG/PNG + manifest |
 | Runtime / service architecture (polished GitHub embed) | **Archify** — `architecture` | static PNG/SVG Share Card |
 | CI/CD, approvals, tool-call workflows | **Archify** — `workflow` | static PNG/SVG Share Card |
 | API call chains, cache miss, auth traces | **Archify** — `sequence` | static PNG/SVG Share Card |
@@ -54,6 +59,14 @@ Structured diagram engines produce maintainable, semantically editable visuals t
 | ETL / data pipeline (PlantUML stencils) | PlantUML — data-analytics | ` ```plantuml ` |
 | IoT / sensor network | PlantUML — iot | ` ```plantuml ` |
 
+### Routing rule
+
+1. If the diagram explains observed code decisions or static repository structure and must render directly on GitHub, choose editorial-static.
+2. If it explains runtime components, requests, data movement, or state transitions and benefits from typed layout validation, choose Archify.
+3. If formal domain notation or vendor stencils matter, choose PlantUML.
+4. If the content is quantitative, choose Vega/Vega-Lite.
+5. If the relationship fits one sentence or a small table, do not draw it.
+
 ### When to prefer Archify vs other engines
 
 | Prefer Archify when… | Prefer another engine when… |
@@ -65,6 +78,25 @@ Structured diagram engines produce maintainable, semantically editable visuals t
 | 8–12 primary nodes with one clear main path | Compact hero-integrated illustration → hand-authored SVG |
 
 Do not use Archify for heroes, section banners, badges, ImageGen subjects, or decorative motion. Those stay on the SVG / hybrid / GIF paths in this skill.
+
+---
+
+## Editorial-static (GitHub-native code diagrams)
+
+Editorial-static is a production contract, not a copied renderer or template library. The Agent inspects repository evidence and authors a project-native static SVG (or PNG when necessary), while a JSON manifest records the output choices, source evidence, and fidelity ledger.
+
+Use it for `flowchart`, `dependency`, `class`, `er`, `db-schema`, `tree`, `timeline`, and `swimlane`. Before drawing:
+
+1. Read [editorial-static-diagrams.md](editorial-static-diagrams.md).
+2. Freeze `type`, `format`, `size`, `detail`, and `audience`.
+3. Collect repository-relative evidence for code-backed claims.
+4. Apply the complexity budget and deterministic degrade ladder.
+5. Publish under `assets/readme/diagrams/` and retain `assets/readme/source/<slug>.diagram.json`.
+6. Run `verify_readme.py`, then inspect the rendered result at `900px` and `360px`.
+
+Prefer a `960×600` `doc-inline` SVG for normal README body diagrams and a `1200×675` `doc-wide` SVG for wide proof modules. Both use system fonts and the README's frozen palette. Do not import Diagram Design's remote fonts or house skin.
+
+This branch does not automatically infer program behavior. The Agent remains responsible for inspecting code and separating observed facts from conceptual grouping.
 
 ---
 
@@ -511,6 +543,7 @@ Editorial-style information cards with magazine-quality typography. Best for kno
 
 | Engine | Fence / output | Top mistakes to avoid |
 | --- | --- | --- |
+| Editorial-static | static SVG/PNG + `.diagram.json` manifest | Missing source evidence; silent omissions; over-budget topology; preset/asset mismatch; remote fonts |
 | Archify | JSON IR → HTML → PNG/SVG Share Card | Embedding interactive HTML as the only GitHub image; inventing topology; skipping `validate`/`deliver`; using Archify for heroes or charts |
 | PlantUML (all) | ` ```plantuml ` | Using ` ```text ` instead of ` ```plantuml `; missing `@startuml`/`@enduml` |
 | Vega-Lite | ` ```vega-lite ` | Missing `$schema`; invalid JSON (trailing commas, unquoted keys); wrong field casing |

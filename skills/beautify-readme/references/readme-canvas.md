@@ -25,6 +25,7 @@ For a hybrid SVG composition, publish the rendered PNG/WebP instead of an SVG th
 ## SVG defaults
 
 - Use a `1200`-unit-wide `viewBox` for full-width modules.
+- Editorial-static README body diagrams may use the explicit `doc-inline` preset (`960×600`) when their root carries `data-diagram-engine="editorial-static"` and `data-readme-preset="doc-inline"` and a matching manifest exists. Use `doc-wide` (`1200×675`) for wide editorial diagrams. Read [editorial-static-diagrams.md](editorial-static-diagrams.md).
 - Typical heights: hero `300–420`, section banner `120–170`, visual explainer `320–760`.
 - Include `<title>` and `<desc>` for major visual modules.
 - Use system font families such as `-apple-system`, `BlinkMacSystemFont`, `Segoe UI`, `PingFang SC`, and `sans-serif`.
@@ -81,10 +82,13 @@ assets/readme/
 ├── showcase.png
 ├── section-*.svg
 ├── workflow.svg
+├── diagrams/
+│   └── request-flow.svg
 └── source/
     ├── hero-layout.svg
     ├── hero-subject.png
-    └── hero-prompt.txt
+    ├── hero-prompt.txt
+    └── request-flow.diagram.json
 ```
 
 Use lowercase hyphenated names. Remove discarded variants before publishing unless the user wants to retain source explorations.

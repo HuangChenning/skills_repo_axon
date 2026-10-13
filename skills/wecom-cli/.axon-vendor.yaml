@@ -3,5 +3,5 @@ vendor: wecom-cli
 repo: https://github.com/WecomTeam/wecom-cli.git
 subdir: skills
 ref: main
-commit: c4b9b6610c7ca2854441bfa336a5b458daeeb707
-synced_at: 2026-09-28T09:33:17.632227Z
+commit: 4c74ff28838d8fba267eaab5179d9d56f9ca61ae
+synced_at: 2026-10-13T15:17:51.972674Z

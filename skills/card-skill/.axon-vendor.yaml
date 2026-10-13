@@ -3,5 +3,5 @@ vendor: card-skill
 repo: https://github.com/KKenny0/card-skill.git
 subdir: .
 ref: main
-commit: 6a47442ead6eeaff24b49da3cbf76e7c7d4438b4
-synced_at: 2026-09-28T09:34:03.158371Z
+commit: bd93187cf40296d765fbca3781665598b2e23994
+synced_at: 2026-10-10T11:12:56.930854Z

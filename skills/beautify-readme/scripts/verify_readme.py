@@ -5,7 +5,7 @@ Checks four dimensions that can be verified without human judgment:
   1. Content architecture — sections, install path, alt text
   2. Visual system — SVG structure, legible text, no fragile features
   3. Quality bar — AI filler phrases, pure black, meaningful alt text
-  4. Diagram engine syntax — fence names, PlantUML/Vega/Infographic basics
+  4. Diagram integrity — fence syntax and editorial-static provenance
 
 Usage:
   python3 verify_readme.py README.md
@@ -41,6 +41,23 @@ GENERIC_ALT_TEXT = [
     "hero", "header", "graphic", "icon",
 ]
 
+EDITORIAL_STATIC_TYPES = {
+    "flowchart", "dependency", "class", "er", "db-schema",
+    "tree", "timeline", "swimlane",
+}
+EDITORIAL_STATIC_FORMATS = {"svg", "png"}
+EDITORIAL_STATIC_SIZES = {
+    "doc-inline": (960.0, 600.0),
+    "doc-wide": (1200.0, 675.0),
+}
+EDITORIAL_STATIC_DETAILS = {"faithful", "balanced", "simplified"}
+EDITORIAL_STATIC_AUDIENCES = {"engineer", "mixed", "executive"}
+EDITORIAL_STATIC_BUDGETS = {
+    "faithful": {"nodes": 18, "connectors": 32},
+    "balanced": {"nodes": 9, "connectors": 12},
+    "simplified": {"nodes": 7, "connectors": 9},
+}
+
 
 class CheckResult:
     def __init__(self, name, passed, detail=""):
@@ -62,6 +79,16 @@ def read_file(path):
             return f.read()
     except FileNotFoundError:
         return None
+
+
+def parse_svg_attribute(opening_tag, name):
+    """Return one quoted SVG attribute value from an opening tag."""
+    match = re.search(
+        rf'\b{re.escape(name)}\s*=\s*(["\'])(.*?)\1',
+        opening_tag,
+        re.IGNORECASE | re.DOTALL,
+    )
+    return match.group(2) if match else None
 
 
 # ---------------------------------------------------------------------------
@@ -336,19 +363,31 @@ def check_svg_files(svg_files, readme_path):
             "" if has_viewbox else "Missing viewBox attribute"
         ))
 
-        # Check viewBox width is 1200 for full-width SVGs
+        # Full-width assets use 1200. Editorial-static doc-inline diagrams may
+        # use 960 only when their root explicitly declares the production branch.
+        svg_open_match = re.search(r"<svg\b[^>]*>", content, re.IGNORECASE | re.DOTALL)
+        svg_open = svg_open_match.group(0) if svg_open_match else ""
+        diagram_engine = parse_svg_attribute(svg_open, "data-diagram-engine")
+        readme_preset = parse_svg_attribute(svg_open, "data-readme-preset")
         vb_match = re.search(r'viewBox=["\'](\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)["\']', content)
         if vb_match:
             vb_width = float(vb_match.group(3))
-            has_1200 = abs(vb_width - 1200) < 1
+            approved_width = abs(vb_width - 1200) < 1 or (
+                abs(vb_width - 960) < 1
+                and diagram_engine == "editorial-static"
+                and readme_preset == "doc-inline"
+            )
             results.append(CheckResult(
-                f"2.3 viewBox width 1200: {basename}",
-                has_1200,
-                f"width={vb_width}" if not has_1200 else ""
+                f"2.3 Approved viewBox width: {basename}",
+                approved_width,
+                (
+                    f"width={vb_width}; expected 1200, or marked editorial-static doc-inline at 960"
+                    if not approved_width else ""
+                )
             ))
         else:
             results.append(CheckResult(
-                f"2.3 viewBox width 1200: {basename}",
+                f"2.3 Approved viewBox width: {basename}",
                 False,
                 "Could not parse viewBox"
             ))
@@ -489,8 +528,253 @@ def check_image_references(readme, readme_path):
 
 
 # ---------------------------------------------------------------------------
-# Dimension 4: Diagram engine syntax
+# Dimension 4: Diagram integrity
 # ---------------------------------------------------------------------------
+
+def find_editorial_static_assets(readme, readme_path):
+    """Find local images published under assets/readme/diagrams/."""
+    readme_dir = Path(readme_path).resolve().parent
+    markdown_refs = re.findall(r"!\[[^\]]*\]\(([^)\s]+)", readme)
+    html_refs = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', readme)
+    assets = []
+
+    for raw_ref in markdown_refs + html_refs:
+        ref = raw_ref.strip().strip("<>")
+        if ref.startswith(("http://", "https://", "//", "data:")):
+            continue
+        ref = ref.split("#", 1)[0].split("?", 1)[0]
+        normalized = ref.replace("\\", "/").lstrip("./")
+        if "assets/readme/diagrams/" not in normalized:
+            continue
+        path = Path(ref)
+        full_path = path.resolve() if path.is_absolute() else (readme_dir / path).resolve()
+        if full_path not in assets:
+            assets.append(full_path)
+
+    return assets
+
+
+def path_is_within(path, root):
+    """Compatibility helper for checking repository-relative evidence paths."""
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def check_editorial_static_diagrams(readme, readme_path):
+    """Validate editorial-static asset markers, manifests, and source evidence."""
+    results = []
+    assets = find_editorial_static_assets(readme, readme_path)
+    if not assets:
+        return [CheckResult(
+            "4.8 Editorial-static assets",
+            True,
+            "No editorial-static assets found (N/A)"
+        )]
+
+    repo_root = Path(readme_path).resolve().parent
+    for asset in assets:
+        label = asset.name
+        extension = asset.suffix.lower().lstrip(".")
+        source_dir = asset.parent.parent / "source"
+        manifest_path = source_dir / f"{asset.stem}.diagram.json"
+
+        results.append(CheckResult(
+            f"4.8 Editorial-static asset exists: {label}",
+            asset.is_file(),
+            "" if asset.is_file() else f"Missing {asset}"
+        ))
+        if not asset.is_file():
+            continue
+
+        results.append(CheckResult(
+            f"4.9 Editorial-static manifest exists: {label}",
+            manifest_path.is_file(),
+            "" if manifest_path.is_file() else f"Missing {manifest_path}"
+        ))
+        if not manifest_path.is_file():
+            continue
+
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            results.append(CheckResult(
+                f"4.10 Editorial-static manifest valid JSON: {label}",
+                False,
+                str(error)[:120]
+            ))
+            continue
+        if not isinstance(manifest, dict):
+            results.append(CheckResult(
+                f"4.10 Editorial-static manifest contract: {label}",
+                False,
+                "manifest root must be an object"
+            ))
+            continue
+
+        field_errors = []
+        if manifest.get("schema_version") != 1:
+            field_errors.append("schema_version must be 1")
+        if manifest.get("engine") != "editorial-static":
+            field_errors.append("engine must be editorial-static")
+        if manifest.get("type") not in EDITORIAL_STATIC_TYPES:
+            field_errors.append(f"unsupported type {manifest.get('type')!r}")
+        if manifest.get("format") not in EDITORIAL_STATIC_FORMATS:
+            field_errors.append(f"unsupported format {manifest.get('format')!r}")
+        if manifest.get("format") != extension:
+            field_errors.append(f"format {manifest.get('format')!r} does not match .{extension}")
+        if manifest.get("size") not in EDITORIAL_STATIC_SIZES:
+            field_errors.append(f"unsupported size {manifest.get('size')!r}")
+        if manifest.get("detail") not in EDITORIAL_STATIC_DETAILS:
+            field_errors.append(f"unsupported detail {manifest.get('detail')!r}")
+        if manifest.get("audience") not in EDITORIAL_STATIC_AUDIENCES:
+            field_errors.append(f"unsupported audience {manifest.get('audience')!r}")
+        if not isinstance(manifest.get("source_backed"), bool):
+            field_errors.append("source_backed must be boolean")
+
+        counts = manifest.get("counts")
+        if not isinstance(counts, dict):
+            field_errors.append("counts must be an object")
+        else:
+            for key in ("nodes", "connectors", "focal", "zones"):
+                value = counts.get(key)
+                if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                    field_errors.append(f"counts.{key} must be a non-negative integer")
+            detail = manifest.get("detail")
+            budget = EDITORIAL_STATIC_BUDGETS.get(detail)
+            if budget and all(isinstance(counts.get(key), int) for key in ("nodes", "connectors")):
+                if counts["nodes"] > budget["nodes"]:
+                    field_errors.append(
+                        f"{detail} node budget is {budget['nodes']}, got {counts['nodes']}"
+                    )
+                if counts["connectors"] > budget["connectors"]:
+                    field_errors.append(
+                        f"{detail} connector budget is {budget['connectors']}, got {counts['connectors']}"
+                    )
+            if isinstance(counts.get("focal"), int) and counts["focal"] > 2:
+                field_errors.append(f"focal budget is 2, got {counts['focal']}")
+            if (
+                detail == "faithful"
+                and isinstance(counts.get("nodes"), int)
+                and counts["nodes"] > 9
+                and (
+                    not isinstance(counts.get("zones"), int)
+                    or not 2 <= counts["zones"] <= 4
+                )
+            ):
+                field_errors.append("faithful diagrams above 9 nodes need 2-4 zones")
+
+        fidelity = manifest.get("fidelity")
+        if not isinstance(fidelity, dict):
+            field_errors.append("fidelity must be an object")
+        else:
+            for key in ("merged", "collapsed", "dropped"):
+                if not isinstance(fidelity.get(key), list):
+                    field_errors.append(f"fidelity.{key} must be an array")
+                elif not all(
+                    isinstance(item, str) and item.strip()
+                    for item in fidelity[key]
+                ):
+                    field_errors.append(f"fidelity.{key} entries must be non-empty strings")
+
+        results.append(CheckResult(
+            f"4.10 Editorial-static manifest contract: {label}",
+            not field_errors,
+            "; ".join(field_errors)
+        ))
+
+        evidence = manifest.get("evidence")
+        evidence_errors = []
+        if not isinstance(evidence, list):
+            evidence_errors.append("evidence must be an array")
+            evidence = []
+        if manifest.get("source_backed") is True and not evidence:
+            evidence_errors.append("source-backed diagram needs at least one evidence entry")
+        if manifest.get("source_backed") is False and evidence:
+            evidence_errors.append("conceptual diagram must use an empty evidence array")
+
+        for index, entry in enumerate(evidence, 1):
+            if not isinstance(entry, dict):
+                evidence_errors.append(f"evidence #{index} must be an object")
+                continue
+            evidence_path = entry.get("path")
+            lines = entry.get("lines")
+            if not isinstance(evidence_path, str) or not evidence_path.strip():
+                evidence_errors.append(f"evidence #{index} needs path")
+                continue
+            candidate = (repo_root / evidence_path).resolve()
+            candidate_exists = False
+            if Path(evidence_path).is_absolute() or not path_is_within(candidate, repo_root):
+                evidence_errors.append(f"evidence #{index} path escapes repository")
+            elif not candidate.is_file():
+                evidence_errors.append(f"evidence #{index} file not found: {evidence_path}")
+            else:
+                candidate_exists = True
+            if not isinstance(lines, str) or not re.fullmatch(r"\d+(?:-\d+)?", lines):
+                evidence_errors.append(f"evidence #{index} lines must be N or N-N")
+            elif candidate_exists:
+                start_text, _, end_text = lines.partition("-")
+                start = int(start_text)
+                end = int(end_text or start_text)
+                try:
+                    line_count = len(candidate.read_text(
+                        encoding="utf-8", errors="replace"
+                    ).splitlines())
+                except OSError as error:
+                    evidence_errors.append(
+                        f"evidence #{index} file unreadable: {error}"
+                    )
+                    continue
+                if start < 1 or end < start or end > line_count:
+                    evidence_errors.append(
+                        f"evidence #{index} lines {lines} outside 1-{line_count}"
+                    )
+
+        results.append(CheckResult(
+            f"4.11 Editorial-static evidence resolves: {label}",
+            not evidence_errors,
+            "; ".join(evidence_errors)
+        ))
+
+        if extension == "svg":
+            content = read_file(asset)
+            marker_errors = []
+            svg_open_match = re.search(
+                r"<svg\b[^>]*>", content or "", re.IGNORECASE | re.DOTALL
+            )
+            svg_open = svg_open_match.group(0) if svg_open_match else ""
+            if parse_svg_attribute(svg_open, "data-diagram-engine") != "editorial-static":
+                marker_errors.append("missing data-diagram-engine=editorial-static")
+            if parse_svg_attribute(svg_open, "data-readme-preset") != manifest.get("size"):
+                marker_errors.append("data-readme-preset does not match manifest size")
+
+            viewbox = parse_svg_attribute(svg_open, "viewBox")
+            viewbox_match = re.fullmatch(
+                r"\s*-?\d+(?:\.\d+)?\s+-?\d+(?:\.\d+)?\s+"
+                r"(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s*",
+                viewbox or "",
+            )
+            expected = EDITORIAL_STATIC_SIZES.get(manifest.get("size"))
+            if not viewbox_match:
+                marker_errors.append("viewBox is missing or invalid")
+            elif expected:
+                actual = (float(viewbox_match.group(1)), float(viewbox_match.group(2)))
+                if any(abs(value - wanted) >= 1 for value, wanted in zip(actual, expected)):
+                    marker_errors.append(
+                        f"viewBox {actual[0]:g}×{actual[1]:g} does not match "
+                        f"{manifest.get('size')} {expected[0]:g}×{expected[1]:g}"
+                    )
+
+            results.append(CheckResult(
+                f"4.12 Editorial-static SVG markers/preset: {label}",
+                not marker_errors,
+                "; ".join(marker_errors)
+            ))
+
+    return results
+
 
 def check_code_fences(readme):
     """Check code-fence diagram syntax for common errors."""
@@ -639,10 +923,10 @@ def main():
         print(r)
     print()
 
-    # Dimension 4: Diagram engine syntax
-    print("Dimension 4 — Diagram engine syntax")
+    # Dimension 4: Diagram integrity
+    print("Dimension 4 — Diagram integrity")
     print("-" * 50)
-    d4 = check_code_fences(readme)
+    d4 = check_code_fences(readme) + check_editorial_static_diagrams(readme, readme_path)
     all_results.extend(d4)
     for r in d4:
         print(r)

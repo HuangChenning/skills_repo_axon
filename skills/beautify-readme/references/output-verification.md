@@ -61,7 +61,7 @@ Verifies that visual assets follow the production rules from [svg-production.md]
 
 ### 2.2 SVG asset structure
 
-- [ ] Every full-width SVG has a `1200`-unit `viewBox`.
+- [ ] Every full-width SVG has a `1200`-unit `viewBox`; an editorial-static `doc-inline` body diagram may use `960×600` only with the required root markers and matching manifest.
 - [ ] Every SVG has `<title>` and `<desc>` elements.
 - [ ] Every SVG uses system font stacks (no remote fonts).
 - [ ] Important content is at least `48–64` units from edges.
@@ -77,6 +77,9 @@ Verifies that visual assets follow the production rules from [svg-production.md]
 
 ### 2.4 Diagram engine compliance
 
+- [ ] Editorial-static diagrams live under `assets/readme/diagrams/`, retain a matching `.diagram.json` manifest under `assets/readme/source/`, and declare matching type/format/size/detail/audience values.
+- [ ] Every source-backed editorial-static diagram has resolvable repository-relative evidence paths and line ranges; conceptual diagrams are explicitly labeled conceptual.
+- [ ] Editorial-static output stays within its complexity budget or reports the split, and its fidelity ledger names every meaningful merge, collapse, or omission.
 - [ ] Code-fence diagrams use the correct fence: ` ```plantuml `, ` ```vega-lite `, ` ```vega `, ` ```infographic `, ` ```canvas `.
 - [ ] PlantUML diagrams start with `@startuml` and end with `@enduml` (or `@startmindmap`/`@endmindmap`).
 - [ ] Vega/Vega-Lite JSON includes `$schema` and uses valid JSON (double quotes, no trailing commas).
@@ -148,6 +151,7 @@ Verifies that the workflow steps were actually followed, not just the final outp
 
 - [ ] `scripts/audit_readme.py` was run and passed (in README mode).
 - [ ] `scripts/verify_readme.py` was run and all programmatic checks passed.
+- [ ] Editorial-static manifest, preset, and source-evidence checks passed when that branch was used.
 - [ ] Every SVG was rendered and visually inspected.
 - [ ] Wide (`900px`) and narrow (`360px`) layouts were checked.
 - [ ] Dark and light GitHub theme contrast was checked.

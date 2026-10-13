@@ -1,6 +1,6 @@
 ---
 name: beautify-readme
-description: Redesign GitHub README homepages or create project-native pure SVG, hybrid SVG-composed PNG/WebP, code-fence diagrams, optional Archify system maps, and opt-in animated GIF assets. Use when a user asks to beautify, redesign, rebrand, visually upgrade, simplify, or audit a GitHub README; create a hero, section headers, diagrams, badges, motion graphics, showcase modules, or other README assets; add PlantUML, Vega, infographic, architecture, or Archify architecture/workflow/sequence/dataflow/lifecycle diagrams to a README; or turn a repository homepage into a cohesive visual story. Supports both GitHub-native rendering and Markdown Viewer enhanced diagrams.
+description: Redesign GitHub README homepages or create project-native pure SVG, editorial static code diagrams, hybrid SVG-composed PNG/WebP, code-fence diagrams, optional Archify system maps, and opt-in animated GIF assets. Use when a user asks to beautify, redesign, rebrand, visually upgrade, simplify, or audit a GitHub README; create a hero, section headers, source-backed code logic, flowcharts, dependency/UML/ER/database diagrams, badges, motion graphics, showcase modules, or other README assets; add PlantUML, Vega, infographic, architecture, or Archify architecture/workflow/sequence/dataflow/lifecycle diagrams to a README; or turn a repository homepage into a cohesive visual story. Supports both GitHub-native rendering and Markdown Viewer enhanced diagrams.
 ---
 
 # Beautify README
@@ -19,7 +19,7 @@ The README renders on `github.com` using GitHub's built-in Markdown renderer. Th
 - GitHub strips `<script>`, `foreignObject`, external stylesheets, web fonts, and animation inside SVG. Use only paths, shapes, text, patterns, gradients, clipping paths, and simple transforms.
 - Use GIF for approved motion that must play directly on GitHub.
 - Use Markdown for body copy, commands, tables, links, and details.
-- Diagram engines (PlantUML, Vega, Archify, etc.) may be used as production aids: generate the diagram, export a static SVG or PNG, and embed the image file. Keep the semantic source alongside the exported asset. For polished system maps (architecture, workflow, sequence, dataflow, lifecycle), prefer the optional Archify branch in [references/diagram-engines.md](references/diagram-engines.md) when available.
+- Diagram engines (editorial-static, PlantUML, Vega, Archify, etc.) may be used as production aids: generate the diagram, export a static SVG or PNG, and embed the image file. Keep the semantic source alongside the exported asset. For source-backed code logic, dependency, UML, ER, database, tree, timeline, or swimlane diagrams, use the editorial-static branch in [references/editorial-static-diagrams.md](references/editorial-static-diagrams.md). For polished system maps (architecture, workflow, sequence, dataflow, lifecycle), prefer the optional Archify branch in [references/diagram-engines.md](references/diagram-engines.md) when available.
 
 ### Markdown Viewer enhanced context
 
@@ -148,6 +148,7 @@ Read [references/readme-canvas.md](references/readme-canvas.md), [references/svg
 
 - Use SVG for the hero, section banners, deterministic design modules, and GitHub-native diagrams.
 - Use code-fence diagram engines (PlantUML, Vega, infographic, canvas, architecture, infocard) for Markdown Viewer enhanced diagrams. Read [references/diagram-engines.md](references/diagram-engines.md) for the engine selection guide and critical syntax rules.
+- For GitHub-native code logic and repository structure diagrams, use **editorial-static** when the need is flowchart, dependency, class, ER, database schema, tree, timeline, or swimlane. Freeze `type / format / size / detail / audience`, keep the result within its complexity budget, publish under `assets/readme/diagrams/`, and retain the evidence/fidelity manifest under `assets/readme/source/`. Read [references/editorial-static-diagrams.md](references/editorial-static-diagrams.md) before drawing.
 - For polished GitHub-native system maps (architecture, workflow, sequence, dataflow, lifecycle), use the optional **Archify** production branch when the Archify skill/CLI is available: author typed JSON → `validate` → `deliver` → export a Share Card or static PNG/SVG → embed the image and keep the JSON (and optional HTML) under `assets/readme/source/`. Do not embed interactive Archify HTML as the sole GitHub image.
 - Use PNG/WebP for screenshots, generated art, photo material, Archify Share Cards, and complex compositing. Use GIF only for approved motion.
 - When hybrid composition is selected, read [references/hybrid-svg-production.md](references/hybrid-svg-production.md), use the `imagegen` Skill for generation, and keep exact copy out of the generated raster layer.
@@ -181,7 +182,7 @@ python3 scripts/verify_readme.py /path/to/repository/README.md
 - **Content architecture** — sections present, install path, alt text, no TOC-first
 - **Visual system** — SVG viewBox/title/desc, no fragile features, no pure black, system fonts
 - **Quality bar** — no AI filler phrases, no filler data, image references valid
-- **Diagram engine syntax** — PlantUML start/end, Vega JSON validity, infographic syntax; Archify validate/deliver and static embed checks are manual
+- **Diagram engine syntax and static provenance** — PlantUML start/end, Vega JSON validity, infographic syntax, plus editorial-static manifest/preset/evidence checks; Archify validate/deliver and static export checks remain manual
 
 If any programmatic check fails, fix the gap and re-run. Do not declare success with known failures.
 
@@ -221,6 +222,7 @@ If any dimension has failures, the overall result is FAIL. Fix the gaps and re-r
 - Visually inspect the hero, every section transition, and the final call to action.
 - In asset-only mode, render and inspect every requested asset at GitHub content width; for GIFs, inspect entry, settled hold, exit, and loop boundary.
 - For code-fence diagrams, verify they render correctly in a Markdown Viewer and check syntax against the rules in [references/diagram-engines.md](references/diagram-engines.md).
+- For editorial-static diagrams, confirm the manifest matches the published asset, repository evidence resolves, the fidelity ledger reports meaningful cuts, and the main path remains readable at both widths.
 - For Archify diagrams, confirm `validate`/`deliver` passed, the published file is a static PNG/SVG (not HTML-only), the IR source is retained, and labels remain legible at GitHub width.
 - Report what changed, what remains intentionally plain, and which files were deliberately left untouched.
 
@@ -234,6 +236,10 @@ When the README needs structured diagrams, pick the engine that matches the job.
 
 | Need | Engine | Code fence / output | Context |
 | --- | --- | --- | --- |
+| Code decision logic and branches | Editorial-static — `flowchart` | static SVG/PNG + manifest | GitHub-native |
+| Module/package/build relationships | Editorial-static — `dependency` | static SVG/PNG + manifest | GitHub-native |
+| Class, ER, or physical database structure | Editorial-static — `class` / `er` / `db-schema` | static SVG/PNG + manifest | GitHub-native |
+| Repository hierarchy, events, or role handoffs | Editorial-static — `tree` / `timeline` / `swimlane` | static SVG/PNG + manifest | GitHub-native |
 | Polished runtime / service architecture | Archify — `architecture` | PNG/SVG Share Card | GitHub-native |
 | CI/CD, approvals, tool-call workflows | Archify — `workflow` | PNG/SVG Share Card | GitHub-native |
 | API / cache / auth call traces | Archify — `sequence` | PNG/SVG Share Card | GitHub-native |
@@ -281,6 +287,7 @@ For copy sequencing and deletion rules, read [references/content-architecture.md
 | [references/content-architecture.md](references/content-architecture.md) | Before restructuring README content or deciding information order |
 | [references/readme-canvas.md](references/readme-canvas.md) | Before building any GitHub-native visual asset |
 | [references/svg-production.md](references/svg-production.md) | Before hand-authoring SVG for heroes, banners, or diagrams |
+| [references/editorial-static-diagrams.md](references/editorial-static-diagrams.md) | Before drawing GitHub-native code logic, dependency, UML/ER/database, tree, timeline, or swimlane diagrams |
 | [references/visual-direction.md](references/visual-direction.md) | Before freezing the art-direction spec |
 | [references/design-system.md](references/design-system.md) | Before choosing colors, typography, layout, or checking taste |
 | [references/project-native-hero.md](references/project-native-hero.md) | Before designing the hero or title system |
@@ -301,6 +308,10 @@ Use $beautify-readme to create one SVG hero and three section headers without mo
 
 ```text
 Use $beautify-readme to add a PlantUML architecture diagram and a Vega-Lite benchmark chart to this README for Markdown Viewer rendering.
+```
+
+```text
+Use $beautify-readme to inspect this repository and add a GitHub-native editorial-static request flow with source evidence and a fidelity manifest.
 ```
 
 ```text
