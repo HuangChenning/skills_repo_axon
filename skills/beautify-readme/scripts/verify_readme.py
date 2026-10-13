@@ -167,8 +167,9 @@ STAGE_KEYWORDS = {
         "它能做什么", "是什么", "概述", "简介", "介绍", "功能", "特点",
     ],
     "Proof": [
-        "proof", "demo", "example", "screenshot", "showcase", "benchmark", "result",
-        "示例", "演示", "截图", "效果", "展示",
+        "proof", "demo", "example", "screenshot", "showcase", "benchmark",
+        "result", "outcome", "output", "deliverable",
+        "示例", "演示", "截图", "效果", "展示", "成果", "产出", "结果",
     ],
     "Mechanism": [
         "how it works", "architecture", "design", "mechanism", "principle",
@@ -258,11 +259,29 @@ def check_content_sequence(readme):
 def check_alt_text(readme):
     """Check that images have meaningful alt text."""
     results = []
-    # Match ![alt](src) patterns
-    img_pattern = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
-    matches = img_pattern.findall(readme)
+    images = []
 
-    if not matches:
+    # Match ![alt](src) patterns.
+    img_pattern = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
+    images.extend(img_pattern.findall(readme))
+
+    # Match HTML images, which are commonly used for centered/full-width heroes.
+    for tag in re.findall(r"<img\b[^>]*>", readme, re.IGNORECASE):
+        src_match = re.search(
+            r'\bsrc=(["\'])(.*?)\1',
+            tag,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if not src_match:
+            continue
+        alt_match = re.search(
+            r'\balt=(["\'])(.*?)\1',
+            tag,
+            re.IGNORECASE | re.DOTALL,
+        )
+        images.append((alt_match.group(2) if alt_match else "", src_match.group(2)))
+
+    if not images:
         results.append(CheckResult(
             "1.6 Images have alt text",
             True,
@@ -270,7 +289,7 @@ def check_alt_text(readme):
         ))
         return results
 
-    for alt, src in matches:
+    for alt, src in images:
         alt_clean = alt.strip().lower()
         if not alt_clean:
             results.append(CheckResult(
@@ -291,6 +310,113 @@ def check_alt_text(readme):
                 f"'{alt[:50]}...'" if len(alt) > 50 else f"'{alt}'"
             ))
 
+    return results
+
+
+MECHANISM_HEADING = re.compile(
+    r"(how it works|architecture|workflow|sequence|data flow|dataflow|"
+    r"lifecycle|mechanism|repository structure|工作原理|架构|工作流|流程|"
+    r"数据流|生命周期|机制|仓库结构)",
+    re.IGNORECASE,
+)
+PROSE_ONLY_DECISION = re.compile(
+    r"<!--\s*diagram-decision:\s*prose-only\s*\|\s*reason:\s*(.*?)\s*-->",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def extract_heading_sections(readme):
+    """Return Markdown heading text and the body controlled by that heading."""
+    headings = list(re.finditer(r"^(#{1,6})\s+(.+)$", readme, re.MULTILINE))
+    sections = []
+    for index, heading in enumerate(headings):
+        level = len(heading.group(1))
+        end = len(readme)
+        for candidate in headings[index + 1:]:
+            if len(candidate.group(1)) <= level:
+                end = candidate.start()
+                break
+        sections.append((heading.group(2).strip(), readme[heading.end():end]))
+    return sections
+
+
+def mechanism_stage_count(section):
+    """Estimate whether a mechanism section contains four or more stages."""
+    arrow_count = len(re.findall(r"(?:→|⇒|--?>)", section))
+    numbered_count = len(re.findall(r"^\s*\d+[.)]\s+\S", section, re.MULTILINE))
+    return max(arrow_count + 1 if arrow_count else 0, numbered_count)
+
+
+def mechanism_has_visual(section):
+    """Detect a static image, SVG/HTML map, or supported diagram fence."""
+    return bool(
+        re.search(r"!\[[^\]]*\]\([^)]+\)", section)
+        or re.search(r"<img\b[^>]*>", section, re.IGNORECASE)
+        or re.search(
+            r"```(?:plantuml|puml|vega(?:-lite)?|infographic|canvas)\b",
+            section,
+            re.IGNORECASE,
+        )
+        or re.search(r"<svg\b|data-diagram-engine=|class=[\"'][^\"']*arch-", section)
+    )
+
+
+def check_mechanism_visualization(readme):
+    """Require a visual or an explicit reason for complex mechanism sections."""
+    results = []
+    mechanism_sections = [
+        (heading, section)
+        for heading, section in extract_heading_sections(readme)
+        if MECHANISM_HEADING.search(heading)
+    ]
+    if not mechanism_sections:
+        return [CheckResult(
+            "1.8 Structured-visual opportunity assessed",
+            True,
+            "No mechanism section found (N/A)",
+        )]
+
+    complex_sections = 0
+    for heading, section in mechanism_sections:
+        stages = mechanism_stage_count(section)
+        if stages < 4:
+            continue
+        complex_sections += 1
+        if mechanism_has_visual(section):
+            results.append(CheckResult(
+                f"1.8 Mechanism visual: {heading}",
+                True,
+                f"{stages} stages; structured visual present",
+            ))
+            continue
+
+        decision = PROSE_ONLY_DECISION.search(section)
+        reason = decision.group(1).strip() if decision else ""
+        reason_is_concrete = (
+            len(reason) >= 12
+            and reason.lower() not in {
+                "not needed", "not applicable", "n/a", "none", "无需", "不需要",
+            }
+        )
+        results.append(CheckResult(
+            f"1.8 Mechanism visual: {heading}",
+            reason_is_concrete,
+            (
+                f"{stages} stages; prose-only reason recorded: {reason}"
+                if reason_is_concrete
+                else (
+                    f"{stages} stages but no structured visual or concrete "
+                    "diagram-decision comment"
+                )
+            ),
+        ))
+
+    if complex_sections == 0:
+        results.append(CheckResult(
+            "1.8 Structured-visual opportunity assessed",
+            True,
+            "Mechanism sections are below the four-stage threshold",
+        ))
     return results
 
 
@@ -898,7 +1024,12 @@ def main():
     # Dimension 1: Content architecture
     print("Dimension 1 — Content architecture")
     print("-" * 50)
-    d1 = check_content_sections(readme) + check_content_sequence(readme) + check_alt_text(readme)
+    d1 = (
+        check_content_sections(readme)
+        + check_content_sequence(readme)
+        + check_alt_text(readme)
+        + check_mechanism_visualization(readme)
+    )
     all_results.extend(d1)
     for r in d1:
         print(r)

@@ -95,6 +95,35 @@ Visual theme:
 
 Do not invent adoption, benchmarks, compatibility, testimonials, or features. Prefer a real screenshot, output, diagram, or generated artifact over decorative stock imagery.
 
+### 4a. Assess structured-visual opportunities
+
+Before choosing the visual system, inspect the existing and planned README for mechanism sections such as **How it works**, architecture, workflow, sequence, data flow, lifecycle, repository structure, or role handoffs. Record the decision before drawing:
+
+```text
+Candidate:
+Relationship shape:
+Selected path: prose | hand SVG | editorial-static | Archify | PlantUML | Vega | other
+Reason:
+Availability / fallback:
+```
+
+Use these routing rules:
+
+1. If the relationship fits one sentence or a small table, keep it as prose. Do not draw a diagram merely to demonstrate an engine.
+2. If a mechanism contains four or more meaningful stages, actors, components, or states, treat it as a structured-visual candidate. Do not silently mark diagram work N/A.
+3. Route observed code decisions and static repository structure to editorial-static.
+4. Route runtime architecture, agent/tool workflows, sequences, data flow, and lifecycles to Archify when available.
+5. Route formal notation or vendor stencils to PlantUML and quantitative evidence to Vega/Vega-Lite.
+6. Check the available agent skills, tools, and user-provided local paths before declaring Archify unavailable. If unavailable, record the fallback and use the closest valid production path.
+
+In README mode, a complex mechanism section must either receive the selected structured visual or carry an explicit prose-only decision with a concrete reason. When a machine-checkable exception is needed, place this comment inside that section:
+
+```html
+<!-- diagram-decision: prose-only | reason: <why a diagram would not improve comprehension> -->
+```
+
+The exception is an audit trail, not a shortcut. A vague reason such as "not needed" fails manual review.
+
 ### 5. Define a theme-specific visual system
 
 Read [references/visual-direction.md](references/visual-direction.md) and [references/design-system.md](references/design-system.md). Freeze a compact art-direction spec:
@@ -179,7 +208,7 @@ python3 scripts/verify_readme.py /path/to/repository/README.md
 
 `verify_readme.py` checks four dimensions programmatically:
 
-- **Content architecture** — sections present, install path, alt text, no TOC-first
+- **Content architecture** — sections present, install path, Markdown/HTML alt text, no TOC-first, proof-stage ordering, and complex mechanism visualization
 - **Visual system** — SVG viewBox/title/desc, no fragile features, no pure black, system fonts
 - **Quality bar** — no AI filler phrases, no filler data, image references valid
 - **Diagram engine syntax and static provenance** — PlantUML start/end, Vega JSON validity, infographic syntax, plus editorial-static manifest/preset/evidence checks; Archify validate/deliver and static export checks remain manual
@@ -193,7 +222,7 @@ Walk through every checklist item in [references/output-verification.md](referen
 - **Dimension 1 (Content architecture)** — first-screen test, content sequence, editing rules, visual-to-text division
 - **Dimension 2 (Visual system)** — visual system spec frozen, text legibility at 900px and 360px, diagram engine compliance, motion compliance
 - **Dimension 3 (Quality bar)** — project-native design, proof and clarity, graceful degradation, taste checklist (anti-AI)
-- **Dimension 4 (Workflow compliance)** — mode and context confirmed, story and system extracted, verification executed, reporting complete
+- **Dimension 4 (Workflow compliance)** — mode and context confirmed, story and system extracted, structured-visual production path assessed, verification executed, reporting complete
 
 #### 8c. Produce a verification summary
 

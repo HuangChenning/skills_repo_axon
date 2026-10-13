@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused tests for editorial-static README verification."""
+"""Focused tests for README content and editorial-static verification."""
 
 import json
 import sys
@@ -20,6 +20,68 @@ SVG_TEMPLATE = """\
   <rect width="100%" height="100%" fill="#f5f5f5"/>
 </svg>
 """
+
+
+class ContentVerificationTests(unittest.TestCase):
+    def test_outcome_heading_is_classified_as_proof(self):
+        self.assertEqual(
+            verify_readme.classify_heading("See the outcome first"),
+            "Proof",
+        )
+        self.assertEqual(
+            verify_readme.classify_heading("先看成果"),
+            "Proof",
+        )
+
+    def test_html_image_alt_text_is_checked(self):
+        readme = (
+            '<img src="assets/readme/hero.svg" '
+            'alt="Project\'s workflow and generated outputs">'
+        )
+        results = verify_readme.check_alt_text(readme)
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].passed)
+        self.assertNotIn("No images found", results[0].detail)
+
+    def test_html_image_without_alt_fails(self):
+        results = verify_readme.check_alt_text(
+            '<img src="assets/readme/hero.svg">'
+        )
+        self.assertTrue(any(not result.passed for result in results))
+
+    def test_complex_mechanism_without_visual_fails(self):
+        readme = """\
+## How it works
+
+Request → inspect → build → verify → publish
+"""
+        results = verify_readme.check_mechanism_visualization(readme)
+        self.assertTrue(any(not result.passed for result in results))
+
+    def test_complex_mechanism_with_visual_passes(self):
+        readme = """\
+## How it works
+
+1. Inspect
+2. Choose
+3. Build
+4. Verify
+
+![Verified workflow](assets/readme/diagrams/workflow.svg)
+"""
+        results = verify_readme.check_mechanism_visualization(readme)
+        self.assertTrue(all(result.passed for result in results))
+
+    def test_concrete_prose_only_decision_passes(self):
+        readme = """\
+## How it works
+
+Request → inspect → build → verify
+
+<!-- diagram-decision: prose-only | reason: The four labels already fit in one readable sentence. -->
+"""
+        results = verify_readme.check_mechanism_visualization(readme)
+        self.assertTrue(all(result.passed for result in results))
 
 
 class EditorialStaticVerificationTests(unittest.TestCase):

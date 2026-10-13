@@ -147,7 +147,15 @@ Verifies that the workflow steps were actually followed, not just the final outp
 - [ ] A visual system spec was frozen before producing assets.
 - [ ] The motif was derived from the project, not applied from a template.
 
-### 4.3 Verification executed
+### 4.3 Production-path decision
+
+- [ ] Mechanism sections (How it works, architecture, workflow, sequence, data flow, lifecycle, repository structure, or handoffs) were explicitly assessed before drawing.
+- [ ] A mechanism with four or more meaningful stages, actors, components, or states uses an appropriate structured visual, or records a concrete prose-only reason with `<!-- diagram-decision: prose-only | reason: ... -->`.
+- [ ] Code decisions and static repository structure route to editorial-static; runtime / agent workflows, sequences, data flow, and lifecycles route to Archify when available.
+- [ ] Archify availability was checked through available skills, tools, and user-provided local paths before choosing a fallback.
+- [ ] Diagram work is marked N/A only after this assessment; “no diagram present” is not by itself evidence that diagrams are inapplicable.
+
+### 4.4 Verification executed
 
 - [ ] `scripts/audit_readme.py` was run and passed (in README mode).
 - [ ] `scripts/verify_readme.py` was run and all programmatic checks passed.
@@ -156,7 +164,7 @@ Verifies that the workflow steps were actually followed, not just the final outp
 - [ ] Wide (`900px`) and narrow (`360px`) layouts were checked.
 - [ ] Dark and light GitHub theme contrast was checked.
 
-### 4.4 Reporting
+### 4.5 Reporting
 
 - [ ] A summary of what changed was provided.
 - [ ] Files deliberately left untouched were reported.
