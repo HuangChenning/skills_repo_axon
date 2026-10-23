@@ -1,6 +1,10 @@
 <p align="center"><img src="assets/logo.png" alt="card-skill logo" width="112"></p>
 
+已确认的 mode 各自只保留一种个人风格，封面只保留纸上荒野。Poster 原有内容块统一采用个人札记；旧风格合同需迁移，见[迁移指南](references/personal-style-migration.md)。
+
 <h1 align="center">card-skill</h1>
+
+正文解释图请求默认采用六类个人关系布局，并用浏览器测量文字是否适配。参见[合同、适用边界与拆图规则](references/article-diagram-personal.md)。旧公式卡和 family 合同需重新规划。
 
 <p align="center"><strong>把文章、观点和技术决策，做成可以直接发布的视觉卡片。</strong></p>
 
@@ -34,17 +38,25 @@
 | 公众号头图、博客封面、正文氛围配图 | 网站落地页、App / 组件 UI 设计 |
 | 小红书 / 社媒观点卡片与多卡轮播 | Figma 原型、Logo / VI 品牌系统 |
 | 论证白板、因果链推演、技术决策权衡 | 图表库式数据绘图（如 ECharts 折线/柱状图） |
-| 正文解释图：公式卡、关系图、流程图、边界模型 | 通用照片修图、图片格式转换 |
+| 正文解释图：六类个人关系布局 | 通用照片修图、图片格式转换 |
 | 微信读书划线整理、个人阅读月报（需明确授权） | 自动静默扫描整个阅读账号正文 |
 | 批量生成具备裁切/溢出自动质检的高清 PNG | 一次性聊天草图、无质检要求的涂鸦 |
 
 ## 30 秒看懂它能做什么
 
-同一套视觉语法，可以自然适配不同的发布任务：封面负责营造情绪与张力，正文卡片负责讲透核心关系，白板负责推演技术权衡。
+五种已确认的个人风格，共用纸面、字体与克制的强调色，各自表达不同的内容关系。
 
-<img src="assets/readme-showcase.png" width="100%" alt="Showcase: 社媒卡片、编辑封面与推理白板">
+<img src="assets/readme-showcase.png" width="100%" alt="五种个人风格：纸上荒野封面、个人关系图、个人札记 Poster、推演札记 Whiteboard、漫游札记 Sketchnote">
 
-<sub>一套视觉语法，三种发布任务：观点拆解为社媒 Poster，核心张力提炼为编辑封面，推理链展开为推演白板。</sub>
+| Mode | 唯一风格 | 阅读任务 |
+|---|---|---|
+| cover / editorial-image | [纸上荒野](references/cover-paper-wilderness.md) | 固定系列语言，以主题意象区分每篇 |
+| poster | [个人札记](references/poster-field-notes.md) | 固定 3:4，先按内容关系分组再分页 |
+| article-diagram | [个人关系图](references/article-diagram-personal.md) | 六类关系布局，让结构说明内容 |
+| whiteboard | [推演札记](references/whiteboard-reasoning-notes.md) | 呈现边界、转向与例外；按需要拆成总览＋局部 |
+| sketchnote | [漫游札记](references/sketchnote-wandering-notes.md) | 意象随阅读变化，按内容组织节奏与断行 |
+
+<sub>展示图均由仓库内的合同通过正式渲染流程生成。点击完整样张可查看细节；旧风格的迁移见<a href="references/personal-style-migration.md">迁移指南</a>。</sub>
 
 ## 支持的格式
 
@@ -53,7 +65,7 @@
 | 发布目标 | Mode | 类型 | 画面呈现效果 | 详细文档 |
 |---|---|---|---|---|
 | 公众号或博客封面 | `editorial-image` | Stable | 情绪、张力与视觉隐喻（不是要点摘要列表） | [文档](references/mode-editorial-image.md) |
-| 正文解释图 | `article-diagram` | Stable | 公式卡、关系图、流程图、边界模型 | [文档](references/mode-article-diagram.md) |
+| 正文解释图 | `article-diagram` | Stable | 六类个人关系布局 | [文档](references/mode-article-diagram.md) |
 | 社媒系列卡片 | `poster` | Stable | 适合小红书/社媒的多卡观点拆解 | [文档](references/mode-poster.md) |
 | 技术决策与系统推演 | `whiteboard` | Stable | 问题、约束、可选路径与最终取舍 | [文档](references/mode-whiteboard.md) |
 | 长文阅读卡 | `long` | Stable | 沉浸式排版的长篇阅读卡片 | [文档](references/mode-long.md) |
@@ -61,6 +73,8 @@
 | 高密度数据与对比 | `infograph` | Studio | 高信息密度的数据比较与结构展示 | [文档](references/mode-infograph.md) |
 | 叙事与冲突转折 | `comic` | Studio | 步骤化叙事、前后转折与故事情境 | [文档](references/mode-comic.md) |
 | 个人随笔与反思 | `sketchnote` | Studio | 温暖亲切的手记风格视觉笔记 | [文档](references/mode-sketchnote.md) |
+
+Sketchnote 自然语言请求默认使用 `variant: "wandering-notes"` 漫游札记：共享字号与间距，按来源组织意象变化、阅读节奏和中文语义断行。仍使用 Studio 完整构图；省略变体同样加载漫游札记。[规则与样例](references/sketchnote-wandering-notes.md)。
 
 > **Stable 与 Studio 的区别：**
 > - **Stable 模式：** 使用内置确定性模板，渲染快、排版稳定，适合批量生产。
@@ -125,9 +139,13 @@ npx skills use KKenny0/card-skill/plugins/card-skill/skills/card-skill --skill c
 [粘贴文章正文或 URL]
 ```
 
-**正文解释图 / 公式卡**
+**纸上荒野：唯一封面系列**
+
+普通封面请求也直接使用纸上荒野：大标题、纸质地形与红色路标，意象随正文变化。renderer 自动加载系列布局；需要合适插画或可用生图能力，不回退到通用 motif。当前只支持已验证的 wechat-cover 横版，方版适配尚未提供。不自动添加署名。[系列工作流](references/cover-paper-wilderness.md)。
+
+**正文解释图 / 个人关系布局**
 ```text
-把这篇文章里值得压缩的章节做成正文解释图。每张只保留核心关系公式和一句判断，跳过纯铺垫和情绪段落。
+把这篇文章里值得解释的关系做成正文解释图。每张表达一个核心关系，保留必要条件，跳过纯铺垫和情绪段落。
 ```
 
 **社媒系列卡片（小红书等）**
@@ -247,14 +265,14 @@ card-skill 基于确定性的 HTML/CSS 模板、文字排版规则、浏览器�
 ## 完整样张
 
 <details>
-<summary>展开样张画廊（12 组）</summary>
+<summary>展开样张画廊（13 张）</summary>
 
-<p><sub>样张取材自杰夫·霍金斯的《千脑智能》（A Thousand Brains）。</sub></p>
+<p><sub>样张涵盖《千脑智能》、A2A 协作与卢梭阅读札记。</sub></p>
 
 <table>
 <tr>
-<td width="50%"><img src="assets/gallery/editorial-wechat-cover.png" width="100%" alt="公众号头图"><br><strong>editorial-image</strong> · 千个模型，一个判断</td>
-<td width="50%"><img src="assets/gallery/article-formula.png" width="100%" alt="公式卡"><br><strong>article-diagram</strong> · 感觉、运动与参考系</td>
+<td width="50%"><img src="assets/gallery/editorial-wechat-cover.png" width="100%" alt="公众号头图"><br><strong>editorial-image</strong> · 协作与内部边界</td>
+<td width="50%"><img src="assets/gallery/article-formula.png" width="100%" alt="个人层级布局"><br><strong>article-diagram</strong> · 感觉、运动与参考系</td>
 </tr>
 <tr>
 <td><img src="assets/gallery/big.png" width="100%" alt="一句话观点卡"><br><strong>big</strong> · 探索世界</td>
@@ -262,10 +280,10 @@ card-skill 基于确定性的 HTML/CSS 模板、文字排版规则、浏览器�
 </tr>
 <tr>
 <td><img src="assets/gallery/long.png" width="100%" alt="长文卡片"><br><strong>long</strong> · 智能是建模</td>
-<td><img src="assets/gallery/whiteboard.png" width="100%" alt="白板推演"><br><strong>whiteboard</strong> · 认识一个杯子</td>
+<td><img src="assets/gallery/whiteboard.png" width="100%" alt="白板推演"><br><strong>whiteboard</strong> · A2A 协作边界</td>
 </tr>
 <tr>
-<td><img src="assets/gallery/article-boundary-legacy.png" width="100%" alt="边界模型"><br><strong>article-diagram</strong> · 参考系边界模型</td>
+<td><img src="assets/gallery/article-boundary-legacy.png" width="100%" alt="个人汇聚布局"><br><strong>article-diagram</strong> · 特征与位置的汇聚关系</td>
 <td><img src="assets/gallery/reading-notes.png" width="100%" alt="阅读笔记"><br><strong>poster</strong> · 阅读笔记</td>
 </tr>
 <tr>
@@ -273,9 +291,10 @@ card-skill 基于确定性的 HTML/CSS 模板、文字排版规则、浏览器�
 <td><img src="assets/gallery/comic.png" width="100%" alt="漫画"><br><strong>comic</strong> · 摸到一条边以后</td>
 </tr>
 <tr>
-<td><img src="assets/gallery/sketchnote.png" width="100%" alt="视觉手记"><br><strong>sketchnote</strong> · 感觉、定位与预测</td>
+<td><img src="assets/gallery/sketchnote.png" width="100%" alt="视觉手记"><br><strong>sketchnote</strong> · 卢梭：当下的安顿</td>
 <td><img src="assets/gallery/reading-report.png" width="100%" alt="阅读导览"><br><strong>poster</strong> · 阅读导览</td>
 </tr>
+<tr><td colspan="2"><img src="assets/gallery/article-personal.png" width="720" alt="个人时间演变布局"><br><strong>article-diagram</strong> · 个人时间演变布局</td></tr>
 </table>
 
 </details>
