@@ -104,16 +104,33 @@
 
 ### 知识库与文章
 
+- “检索知识库里关于 ORA-01555 的文章”
+  `mes -o json knowledge search "ORA-01555" --source mes --limit 5`
+- “检索知识库（MES 内部库 + 墨天轮社区），按更新时间排序”
+  `mes -o json knowledge search "快照过旧" --sort time --time month`
+- “只提取检索结果的标题”
+  `mes -o json knowledge search "巡检" --jq '.mesItems[].title'`
+- “读知识库文章 1687 的正文”
+  `mes knowledge read 1687`
+- “读知识库文章 1687 的原始 HTML”
+  `mes -o json knowledge read 1687 --raw`
+- “打开社区文章 5321”
+  `mes knowledge read 5321 --source modb`（社区无公开正文接口，只返回文章页链接；需用浏览器 User-Agent 打开）
 - “查知识库待审核数”
-  `mes article review-count`
+  `mes knowledge review-count`
 - “保存一篇知识库文章”
-  `mes article create --title “Oracle 巡检指南” --content-md “## 巡检项\n\n1. 检查表空间使用率” --tags “oracle,巡检” --menu-id 506`
+  `mes knowledge create --title “Oracle 巡检指南” --content-md “## 巡检项\n\n1. 检查表空间使用率” --tags “oracle,巡检” --menu-id 506`
 - “保存知识库文章（正文从文件读取）”
-  `mes article create --title “Oracle 巡检指南” --content-md-file ./report.md --tags “oracle,巡检”`
+  `mes knowledge create --title “Oracle 巡检指南” --content-md-file ./report.md --tags “oracle,巡检”`
 - “仅更新文章 123 的标题”
-  `mes article update --id 123 --title “新标题”`
+  `mes knowledge update --id 123 --title “新标题”`
 
   **Heuristics & Guidance**:
+  - **检索 vs 列表**: 用户要“找资料/查解决方案”时用 `knowledge search`（全库全文检索）；用户要“我管理的文章/待审核”时用 `knowledge list`（管理态列表）。二者互不等价。
+  - **检索需要登录**: 未登录时 `knowledge search` 直接返回「未登录，请先执行 `mes auth login`」且不发起任何请求，先让用户登录再重跑同一条命令。
+  - **检索结果分两块**: `knowledge search --source all` 的结果分 MES 内部库（`mesItems`）与墨天轮社区（`modbItems`），**不跨源排名**（两个源的相关度分值不可比），由 Agent 自行判断采用哪一块。
+  - **条数与可用性**: 分区标题给出后端命中总数与本次返回条数（如 `命中 451 条，返回 3 条`），`--limit` 是每源返回条数上限；某个源不可用时该分区标注「不可用（原因）」，据分区标记判断是否有结果，不要把不可用读成没有命中。
+  - **读正文的边界**: 只有 MES 内部库命中能 `knowledge read`；社区命中请打开 `modbItems[].url`（`https://www.modb.pro/db/{id}`，需用浏览器 User-Agent，curl 默认 UA 会被 403；HTTP 200 不代表文章存在，看标题是不是「404 - 墨天轮」）。⚠️ 两个库的 ID 区间重叠，社区 ID 传给 `knowledge read` 会静默读到另一篇无关文档。
   - **分类映射**:
     - `menuId: 505` 对应 `dict: “其他”` (通用架构/流程类)。
     - `menuId: 506` 对应 `dict: “数据库/Oracle”` (Oracle 专门技术类)。
@@ -125,11 +142,11 @@
 服务报告是 type=7 的知识库文章，自动设置 encrypt-level=INTERNAL 和 menu-id=505，仅内部可见。
 
 - “为服务请求 5183 编写服务报告”
-  `mes article create --title “服务请求 5183 处理报告” --content-md “## 问题摘要\n\n...” --tags “服务报告” --sr-id 5183`
+  `mes knowledge create --title “服务请求 5183 处理报告” --content-md “## 问题摘要\n\n...” --tags “服务报告” --sr-id 5183`
 - “为服务请求 5183 编写服务报告（正文从文件读取）”
-  `mes article create --title “服务请求 5183 处理报告” --content-md-file ./report.md --tags “服务报告” --sr-id 5183`
+  `mes knowledge create --title “服务请求 5183 处理报告” --content-md-file ./report.md --tags “服务报告” --sr-id 5183`
 - “为已有关联文章的服务请求 456 更新服务报告”
-  `mes article update --id 123 --sr-id 456 --content-md “## 补充内容\n\n...”`
+  `mes knowledge update --id 123 --sr-id 456 --content-md “## 补充内容\n\n...”`
 
 ### 管理看板
 

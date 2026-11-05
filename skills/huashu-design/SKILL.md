@@ -5,7 +5,7 @@ metadata:
   author: "花叔"
   homepage: "https://github.com/alchaincyf"
   repository: "https://github.com/alchaincyf/huashu-design"
-  version: "3.0.0"
+  version: "3.2.0"
 ---
 
 # 花叔Design · Huashu-Design
@@ -70,6 +70,7 @@ python3 "$HD/scripts/capabilities.py"            # 手里有什么：决定素�
 | 网页、落地页、官网、Dashboard、桌面界面原型 | `references/modules/web.md` |
 | 幻灯片、PPT、路演、课件、汇报 | `references/modules/deck.md` |
 | 信息图、数据可视化、长图 | `references/modules/infographic.md` |
+| 小红书图文、封面、轮播 | `references/modules/xiaohongshu.md` |
 | 手机 App / iOS 原型 | `references/app-prototype.md` |
 | 动画、视频、宣传片、产品演示、带解说的视频、导出 MP4/GIF | `references/modules/motion.md`（模块内还有一层路由） |
 | 评审、打分、「好不好看」 | `references/critique-guide.md` |
@@ -110,7 +111,7 @@ python3 "$HD/scripts/capabilities.py"            # 手里有什么：决定素�
 三张里最多一张用力过头（整页做成道具、套地铁图终端这类万能隐喻）——去掉这个手法信息反而更清楚，它就是过头。
 完整流程：`references/directions.md`。
 
-- 初稿形态：六格缩略图 1 页（备选），外加网页 / 信息图 / 原型每方向 1 个完整 HTML＋截图；deck 每方向 2 页代表页；动画每方向 1 张方向板（真实渲出的关键帧＋色板＋一句定位＋参照名）；封面 / 单图每方向 1 张真实出图
+- 初稿形态：六格缩略图 1 页（备选），外加网页 / 信息图 / 原型每方向 1 个完整 HTML＋截图；deck 每方向 2 页代表页；动画每方向 1 张方向板（真实渲出的关键帧＋色板＋一句定位＋参照名）；封面 / 单图每方向 1 张真实出图；小红书多张图文每方向封面＋1 张内页
 - **摆出来就停**，结束回合等用户选，包括无人值守会话
 - 风格词收窄的是解释空间，不转移选择权：「Apple 风格」时三个方向是 Apple 语境里的三种诠释
 - 唯一豁免（都要在 `direction-approved.md` 记原话或理由）：用户本次会话明说跳过；同一项目内已选定方向后的迭代；非设计的机械操作
@@ -150,7 +151,7 @@ T0 档人人都有（真图库、SVG/canvas/Three.js 程序化材质、数据即
 
 | 要什么 | 读 |
 |---|---|
-| 风格库（网页 / PPT / 信息图 / App / 中文与东亚，每种都有样张图）、色彩推导协议 | `references/design-styles.md`＋`assets/style-specimens/sheet-*.jpg` 总览 |
+| 风格库（网页 / PPT / 信息图 / App / 中文与东亚 / 小红书，每种都有样张图）、色彩推导协议 | `references/design-styles.md`＋`assets/style-specimens/sheet-*.jpg` 总览 |
 | 把参考作品截成参考板，动手前亲眼看 | `scripts/ref_board.py` |
 | 字体配对、中文排印、已被用烂名单 | `references/typography.md` |
 | 用户有 design system / codebase 时怎么用 | `references/design-context.md` |
@@ -183,6 +184,13 @@ python3 "$HD/scripts/learn.py" harvest <项目目录>                           
 5. 检查点问答改成产出里的 assumption 清单，gate 文件照写
 
 降级牺牲流程，不牺牲真实资产协议、可读性底线，也不跳过三方向门。
+
+**在 DeepSeek Harness 桌面端里**（工具清单里有 `load_workspace_dependencies`）：
+- 先调用它。下文的 `python3` 换成它返回的 Python（自带 python-pptx、Pillow），`node` 换成它返回的 Node；不要 `pip install`，也不要去找系统 Python
+- 以插件装上时，`playwright`、`pptxgenjs`、`pdf-lib` 已随插件装好（`sharp` 没带，缩略图脚本会自动改用浏览器截小图），`$HD/scripts/*.mjs` 直接能跑。浏览器先用 Playwright 自带的，没有就借用户电脑上的 Chrome / Edge；三样都没有时先问用户要不要下载（`npx playwright install chromium`，一百多 MB），同意了才装
+- 这里没有 Python 版 playwright：可编辑 PPTX 走路线 A（`export_deck_pptx.mjs`），路线 B 的 `pptx_from_rendered.py` 跑不了要说明；`verify.py` 换成 `gen_deck_thumbs.mjs` 出每页缩略图，再逐张读图看
+- `learn.py`、`design_lint.py` 默认写 `~/.huashu-design/`，在「工作区内修改」权限下会被拦：先设 `HUASHU_DESIGN_HOME=<工作区>/.huashu-design` 再跑
+- 三方向门照走，用 `ask_user_question` 让用户挑
 
 没有 fork-verifier 就用 `scripts/verify.py`；没有 Tweaks host 就用纯前端 localStorage 版（`references/tweaks-system.md`）；
 没有结构化问题 UI 就在对话里用 markdown 清单问；HTML 里要调 LLM 就用 mock 或让用户填自己的 key。

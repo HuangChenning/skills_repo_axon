@@ -56,12 +56,41 @@
       "minCliVersion": "v2.1.0",
       "requiresDaemon": false,
       "commands": [
-        "mop ticket assign <id> --assignee <id>",
+        "mop ticket assign <id> --user-id <member-id>",
+        "mop ticket assign <id> --agent-id <agent-id>",
+        "mop ticket assign <id> --team-id <team-id>",
         "mop ticket rerun <id>",
         "mop ticket transcript <id> --out <dir>"
       ],
       "description": "Assign tickets, re-enqueue agent task execution, and export transcripts.",
       "fallback": "Re-run or assign tickets through the ticket detail page in Web UI."
+    },
+    "ticket.clear_assignee": {
+      "name": "Ticket Assignee Clearing",
+      "minCliVersion": "v2.2.13",
+      "requiresDaemon": false,
+      "commands": [
+        "mop ticket assign <id> --clear-assignee",
+        "mop ticket update <id> --clear-assignee",
+        "mop ticket batch-update --ids <ids> --clear-assignee"
+      ],
+      "description": "Clear the assignee on a single ticket or in bulk; `--unassign` remains a hidden alias on assign and batch-update.",
+      "fallback": "Clear the assignee from the ticket detail page in Web UI."
+    },
+    "ticket.owner": {
+      "name": "Ticket Owner",
+      "minCliVersion": "v2.2.13",
+      "requiresDaemon": false,
+      "commands": [
+        "mop ticket create --title <title> --owner-id <member-id>",
+        "mop ticket update <id> --owner-id <member-id>",
+        "mop ticket update <id> --clear-owner",
+        "mop ticket batch-update --ids <ids> --owner-id <member-id>",
+        "mop ticket batch-update --ids <ids> --clear-owner",
+        "mop ticket list --owner-id <member-id>"
+      ],
+      "description": "Set, clear, and filter by the ticket owner, which must be a human workspace member.",
+      "fallback": "Set or clear the owner from the ticket detail page in Web UI."
     },
     "ticket.grill": {
       "name": "Ticket Review Grill",

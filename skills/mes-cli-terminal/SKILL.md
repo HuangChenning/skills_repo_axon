@@ -1,6 +1,6 @@
 ---
 name: mes-cli-terminal
-description: Convert Chinese or natural-language MES requests into precise mes-cli commands in this repository. Use when users ask to install, login, report working hours, manage service requests/plans/articles/contracts, query dashboard/weekly reports, or parse support URLs.
+description: Convert Chinese or natural-language MES requests into precise mes-cli commands in this repository. Use when users ask to install, login, report working hours, manage service requests/plans/articles/contracts, search the knowledge base, query dashboard/weekly reports, or parse support URLs.
 ---
 
 # MES CLI Terminal Skill
@@ -20,7 +20,7 @@ description: Convert Chinese or natural-language MES requests into precise mes-c
 - 服务请求（工单）创建、回复（含附件）、恢复、编辑、报工、下载附件（命令：`mes sr ...`）
 - 实施计划查询/创建/编辑/结束/删除
 - 客户附件查看/上传/下载/打包下载（命令：`mes customer attachment ...`，`--company-id` 必填）
-- MES文章或合同查询与维护
+- MES知识库检索（全文搜索、阅读文章）与文章维护、合同查询
 - MES管理看板（dashboard）查询、周报增删改查
 - MES OSS 文件上传（支持图片及任意文件类型，回复附件也通过 OSS 上传）
 - 给了 support 链接，需要提取 `type/rid`
@@ -52,7 +52,7 @@ AI agent 在执行命令前，**应主动提示用户检查 skill 是否有新�
 ## Command-generation workflow
 
 1. **识别意图域**
-   - `auth | statistics | sr | plan | article | contract | customer | dashboard | util`
+   - `auth | statistics | sr | plan | knowledge | contract | customer | dashboard | util`
 2. **抽取参数槽位**
    - 时间槽：`from/to` 或 `range`，以及 `start/end`
    - 对象槽：`id/rid/acc-id/company-id/executor-id/team-id`
@@ -109,7 +109,7 @@ AI agent 在执行命令前，**应主动提示用户检查 skill 是否有新�
 - `statistics list|calendar|summary|review-stats|related-hours`
 - `sr list|view|download`（view 会列出附件列表含 id）
 - `plan list|view`
-- `article list|view|review-count`
+- `knowledge search|read|list|view|review-count`
 - `contract list|view`
 - `customer attachment list`（仍需 `--company-id`，属于只读）
 - `dashboard ...` 所有查询
@@ -121,10 +121,42 @@ AI agent 在执行命令前，**应主动提示用户检查 skill 是否有新�
 - `statistics add|update|delete|review|bonus`
 - `sr create|reply|recover|edit`
 - `plan create|save|edit|end|delete`
-- `article save|delete|assign-reviewer|set-level|set-type`
+- `knowledge create|update|delete|assign-reviewer|set-level|set-type`
 - `dashboard weeklyReport create|update|delete`
 - `customer attachment upload|download|batch`（每个都要求 `--company-id`；download/batch 是只读但涉及外部资源下载，归类为写操作的预览/确认同样适用）
 - `oss upload image`
+
+## 知识库检索 SOP
+
+### SOP-1：按报错码 / 多关键词 / 截图现象找解决方案
+
+适用：用户给出报错码（如 `ORA-01555`）、多个关键词、或只有截图描述故障，需要找已有排障方案。
+
+1. 检索候选文章（一次命令即可，不要自己拼多轮关键词试探）：
+   ```bash
+   mes -o json knowledge search "<报错码或关键词>" --limit 10
+   ```
+   需要同时覆盖 MES 内部库与墨天轮社区时用默认 `--source all`（结果分 `mesItems` / `modbItems` 两块，不跨源排名）；只看社区内容用 `--source modb`。`--limit` 是每源返回条数上限，文本输出的分区标题给出「命中 N 条，返回 M 条」。
+   ⚠️ **检索需要登录**：未登录时命令直接返回「未登录，请先执行 `mes auth login`」且不发起任何请求，此时先让用户登录，不要改关键词重试。
+2. 读取正文：只有 **MES 内部库**的命中可以读正文，用返回的 `mesItems[].id`：
+   ```bash
+   mes knowledge read <id>
+   ```
+   正文已清洗为 Markdown，可直接阅读全文；需要原始 HTML 时加 `--raw`。
+   **社区命中不要传给 `knowledge read`**：社区没有公开正文接口，请用浏览器 User-Agent 打开结果里的链接（`modbItems[].url`，形如 `https://www.modb.pro/db/{id}`；curl 默认 UA 会被 403，且 HTTP 200 不代表文章存在，要看页面标题是不是「404 - 墨天轮」）。⚠️ 两个库的 ID 区间重叠，混用会静默读到另一篇无关文档。
+3. 若单个来源不可用，stdout 的对应分区会标注「不可用（原因）」（stderr 同时有 `提示:`，JSON 里是 `sources[].ok=false`）：不要重试同一条命令，据分区标记决定是否改用另一来源继续；全部来源失败时才向用户说明检索不可用。
+4. 检索无结果时，改用更短的关键词（去掉错误码前缀、去掉中文修饰词）重试一次，仍无结果则如实告知未命中，不要编造文章内容。
+
+### SOP-2：服务请求 / 实施计划正文按关键词找历史方案
+
+适用：用户想知道“以前类似的服务请求是怎么处理的”“这个报错以前怎么解决的”。
+
+1. 先用关键词检索知识库（服务报告本身也是知识库文章，type=7）：
+   ```bash
+   mes -o json knowledge search "<关键词>" --source mes --limit 10
+   ```
+2. 从结果中筛出 `type` 为服务报告或标题含服务请求号的条目，用 `mes knowledge read <id>` 读正文细节。
+3. 需要按服务请求号精确查找时，先用 `mes -o json sr list "<关键词>"` 拿到服务请求，再用 `mes -o json sr view <id>` 取其正文与附件；截图仍按 Hard rule #9 逐张下载并用 Read 工具分析。
 
 ## Reference Documents
 

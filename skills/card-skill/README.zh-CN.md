@@ -1,5 +1,7 @@
 <p align="center"><img src="assets/logo.png" alt="card-skill logo" width="112"></p>
 
+Long 现在以“长页札记”为默认且唯一风格：连续正文、轻旁记、清楚的两级标题，以及显式声明的同源引文组。保留原文与出处，不自动合并相邻引文。
+
 已确认的 mode 各自只保留一种个人风格，封面只保留纸上荒野。Poster 原有内容块统一采用个人札记；旧风格合同需迁移，见[迁移指南](references/personal-style-migration.md)。
 
 <h1 align="center">card-skill</h1>
@@ -19,6 +21,8 @@
 </p>
 
 ## 它是什么
+
+comic 现采用**片刻札记**：动作与镜头承担变化，保留干净纸面，并以同画面的无文字阅读检验叙事。可选 `comic_art` 通过正常检查与审核链封装概念插画；SVG 自由构图继续支持。
 
 **card-skill** 是专为 coding agent（Claude Code、Codex、OpenCode、Pi 等）打造的视觉卡片生成 skill。输入文章、笔记、观点或技术决策，它能自动生成排版工整、可直接发布的 PNG 卡片。
 
@@ -44,9 +48,9 @@
 
 ## 30 秒看懂它能做什么
 
-五种已确认的个人风格，共用纸面、字体与克制的强调色，各自表达不同的内容关系。
+九种已确认的个人风格，共用纸面、字体与克制的强调色，各自表达不同的内容关系。
 
-<img src="assets/readme-showcase.png" width="100%" alt="五种个人风格：纸上荒野封面、个人关系图、个人札记 Poster、推演札记 Whiteboard、漫游札记 Sketchnote">
+<img src="assets/readme-showcase.png" width="100%" alt="九种个人风格：纸上荒野封面、个人关系图、个人札记 Poster、推演札记 Whiteboard、漫游札记 Sketchnote、一句暂记 Big、长页札记 Long、比较札记 Infograph、片刻札记 Comic">
 
 | Mode | 唯一风格 | 阅读任务 |
 |---|---|---|
@@ -55,6 +59,10 @@
 | article-diagram | [个人关系图](references/article-diagram-personal.md) | 六类关系布局，让结构说明内容 |
 | whiteboard | [推演札记](references/whiteboard-reasoning-notes.md) | 呈现边界、转向与例外；按需要拆成总览＋局部 |
 | sketchnote | [漫游札记](references/sketchnote-wandering-notes.md) | 意象随阅读变化，按内容组织节奏与断行 |
+| big | [一句暂记](references/mode-big.md) | 单一重音与语义停顿，完整保留长短句 |
+| long | [长页札记](references/mode-long.md) | 连续正文、轻旁记、两级标题与同源引用组 |
+| infograph | [比较札记](references/mode-infograph.md) | 明确比较维度与指标口径，按条件密度选择单图或总览＋分组详页 |
+| comic | [片刻札记](references/mode-comic.md) | 动作与镜头承担转折，文字补充背景和边界，同画面检验无字阅读 |
 
 <sub>展示图均由仓库内的合同通过正式渲染流程生成。点击完整样张可查看细节；旧风格的迁移见<a href="references/personal-style-migration.md">迁移指南</a>。</sub>
 
@@ -68,9 +76,9 @@
 | 正文解释图 | `article-diagram` | Stable | 六类个人关系布局 | [文档](references/mode-article-diagram.md) |
 | 社媒系列卡片 | `poster` | Stable | 适合小红书/社媒的多卡观点拆解 | [文档](references/mode-poster.md) |
 | 技术决策与系统推演 | `whiteboard` | Stable | 问题、约束、可选路径与最终取舍 | [文档](references/mode-whiteboard.md) |
-| 长文阅读卡 | `long` | Stable | 沉浸式排版的长篇阅读卡片 | [文档](references/mode-long.md) |
-| 单句金句与宣言 | `big` | Stable | 极简高冲击力的大字宣言卡 | [文档](references/mode-big.md) |
-| 高密度数据与对比 | `infograph` | Studio | 高信息密度的数据比较与结构展示 | [文档](references/mode-infograph.md) |
+| 长文阅读卡 | `long` | Stable | 长页札记：连续正文、轻旁记与显式同源引文组 | [文档](references/mode-long.md) |
+| 单一判断与阅读提问 | `big` | Stable | 一句暂记：语义停顿与单一阅读重音 | [文档](references/mode-big.md) |
+| 高密度数据与对比 | `infograph` | Studio | 比较札记：统一维度、明确指标口径与条件，支持单图及总览＋分组详页 | [文档](references/mode-infograph.md) |
 | 叙事与冲突转折 | `comic` | Studio | 步骤化叙事、前后转折与故事情境 | [文档](references/mode-comic.md) |
 | 个人随笔与反思 | `sketchnote` | Studio | 温暖亲切的手记风格视觉笔记 | [文档](references/mode-sketchnote.md) |
 
@@ -279,7 +287,7 @@ card-skill 基于确定性的 HTML/CSS 模板、文字排版规则、浏览器�
 <td><img src="assets/gallery/poster.png" width="100%" alt="社媒卡片"><br><strong>poster</strong> · 三条线索</td>
 </tr>
 <tr>
-<td><img src="assets/gallery/long.png" width="100%" alt="长文卡片"><br><strong>long</strong> · 智能是建模</td>
+<td><img src="assets/gallery/long.png" width="100%" alt="长文卡片"><br><strong>long</strong> · 卢梭：在此刻停一会儿</td>
 <td><img src="assets/gallery/whiteboard.png" width="100%" alt="白板推演"><br><strong>whiteboard</strong> · A2A 协作边界</td>
 </tr>
 <tr>
@@ -287,8 +295,8 @@ card-skill 基于确定性的 HTML/CSS 模板、文字排版规则、浏览器�
 <td><img src="assets/gallery/reading-notes.png" width="100%" alt="阅读笔记"><br><strong>poster</strong> · 阅读笔记</td>
 </tr>
 <tr>
-<td><img src="assets/gallery/infograph.png" width="100%" alt="信息图"><br><strong>infograph</strong> · 局部模型到共同判断</td>
-<td><img src="assets/gallery/comic.png" width="100%" alt="漫画"><br><strong>comic</strong> · 摸到一条边以后</td>
+<td><img src="assets/gallery/infograph.png" width="100%" alt="信息图"><br><strong>infograph</strong> · 比较札记 · 三种指标口径</td>
+<td><img src="assets/gallery/comic.png" width="100%" alt="漫画"><br><strong>comic</strong> · 卢梭：注意力回到手边</td>
 </tr>
 <tr>
 <td><img src="assets/gallery/sketchnote.png" width="100%" alt="视觉手记"><br><strong>sketchnote</strong> · 卢梭：当下的安顿</td>

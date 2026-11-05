@@ -32,17 +32,28 @@ Inspect workspace feature flags.
 ### Querying & Viewing
 - `mop ticket list` - List open tickets in active workspace.
 - `mop ticket list --status open --priority urgent` - Filter by status and priority.
-- `mop ticket list --assignee <id> --page 1 --per-page 20` - Filter by assignee with pagination.
+- `mop ticket list --assignee-id <id> --page 1 --limit 20` - Filter by assignee with pagination.
+- `mop ticket list --owner-id <member-id>` - Filter by owner (human workspace member).
 - `mop ticket get <id-or-num>` - Get full ticket details by UUID or ticket sequence number.
 
 ### Creation & Updates (Native File First)
 - `mop ticket create --title "Title" --description-file spec.md` - Create ticket using Markdown file.
 - `mop ticket create --title "Title" --label "backend" --label "p0" --priority urgent` - Create ticket with labels and priority.
+- `mop ticket create --title "Title" --owner-id <member-id>` - Create ticket with an owner (human workspace member only; agents and teams are rejected).
 - `mop ticket update <id> --priority urgent --label "backend" --label "p0"` - Update priority and labels (alias: `--labels "backend,p0"`).
+- `mop ticket update <id> --owner-id <member-id>` - Set or replace the owner.
+- `mop ticket update <id> --clear-owner` - Clear the owner (`--owner-id ""` is equivalent).
+- `mop ticket update <id> --clear-assignee` - Clear the assignee (`--assignee-id ""` is equivalent).
 - `mop ticket update <id> --due-date "2026-12-31T00:00:00Z" --activate-at "2026-10-01T00:00:00Z"` - Set scheduled activation or due date.
 - `mop ticket update <id> --status done --cascade-subtickets` - Close ticket and cascade status to open subtickets.
+- `mop ticket batch-update --ids <id1,id2> --owner-id <member-id>` - Set the owner for several tickets.
+- `mop ticket batch-update --ids <id1,id2> --clear-owner` - Clear the owner for several tickets (`--owner-id ""` is equivalent).
+- `mop ticket batch-update --ids <id1,id2> --clear-assignee` - Clear the assignee for several tickets.
 - `mop ticket status <id> <open|in_progress|resolved|closed>` - Transition ticket status.
-- `mop ticket assign <id> --assignee <user-or-agent-id>` - Assign ticket to a member or agent.
+- `mop ticket assign <id> --user-id <member-id>` - Assign the ticket to a human member.
+- `mop ticket assign <id> --agent-id <agent-id>` - Assign the ticket to an agent (queues an agent task).
+- `mop ticket assign <id> --team-id <team-id>` - Assign the ticket to a team.
+- `mop ticket assign <id> --clear-assignee` - Clear the assignee (`--unassign` remains a hidden alias).
 
 ### Comments & Collaboration
 - `mop ticket comment list <id>` - List all comments on a ticket.
