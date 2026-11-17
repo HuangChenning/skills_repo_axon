@@ -160,7 +160,7 @@ Always use native `--*-file` or `--*-stdin` flags:
 | **`memory`** | Memory Body | `--content-file <file>`<br>`--content-stdin` | `mop memory store --type <type> --content-file note.md` |
 | **`asset`** | Declarative Manifest | `-f <manifest.yaml>`<br>`-f -` (stdin) | `mop asset apply -f cluster-manifest.yaml` |
 | **`asset`** | Diagram Input Manifest | `-i <manifest.yaml>`<br>`-i -` (stdin) | `mop asset diagram -i topology.yaml -f diagram.json` |
-| **`ssh`** | Remote Shell Script | `--script <file.sh>` | `mop ssh exec <host> --script ./deploy.sh` |
+| **`ssh`** | Remote Shell Script | `--script <file.sh>` / `--script-stdin` | `mop ssh exec <host> --script ./deploy.sh` or `cat deploy.sh | mop ssh exec --script-stdin <host>` |
 | **`email`** | Email Body | `--body-file <file>` | `mop email send --to <addr> --subject "..." --body-file note.html --html` |
 | **`skill`** | Entire Directory | `import --path <dir>` | `mop skill import --path ./my-skill/ --update` |
 

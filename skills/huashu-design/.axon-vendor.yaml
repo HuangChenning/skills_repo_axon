@@ -3,5 +3,5 @@ vendor: huashu-design
 repo: https://github.com/alchaincyf/huashu-design.git
 subdir: .
 ref: master
-commit: b2460b031c33ff32d2bf3b97263527daa231e4de
-synced_at: 2026-11-05T03:38:06.691503Z
+commit: e8d1148a80d5a281d4247cffe320add3df017928
+synced_at: 2026-11-17T03:40:24.626482Z

@@ -227,6 +227,7 @@ Execute commands and transfer files across remote hosts via JumpServer/bastion i
 - `mop ssh exec <host> -- <command...>` - Execute command on remote host.
 - `mop ssh exec <host> --user root -- env KEY=VALUE <command>` - Execute as specific user with remote environment.
 - `mop ssh exec <host> --script ./deploy.sh -- arg1 arg2` - Execute a local shell script remotely.
+- `cat deploy.sh | mop ssh exec --script-stdin <host>` - Execute a script from stdin (maximum 4 MiB; defaults to `sh -s`).
 - `mop ssh upload <host> --src ./app.tar.gz --dst /opt/app/ [--user root]` - Upload a local file to remote host.
 - Supports `--loglevel debug|info|warn|error` and `--logfile <path>`.
 

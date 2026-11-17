@@ -125,8 +125,8 @@ vendors:
       dest: skills/architecture-diagram
       ref: main
     - name: obsidian-skills
-      repo: https://github.com/kepano/obsidian-skills.git
-      subdir: skills
+      repo: https://github.com/obsidianmd/obsidian-skills.git
+      subdir: plugins/obsidian/skills
       dest: skills/obsidian-skills
       ref: main
     - name: card-skill

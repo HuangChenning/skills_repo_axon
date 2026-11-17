@@ -3,5 +3,5 @@ vendor: mopheus-skills
 repo: https://github.com/enmotech/mopheus-skills.git
 subdir: skills
 ref: main
-commit: 354ffa32b18645b676525feab74c7487d2926137
-synced_at: 2026-11-05T03:37:44.943768Z
+commit: bc6b54dc32cc555ab27ae1f41252c67012de9b5a
+synced_at: 2026-11-17T03:40:03.549199Z
