@@ -1,0 +1,11 @@
+# Test artifacts
+card-workspace/
+tmp/
+/gallery/
+.lode/tmp-*.json
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store

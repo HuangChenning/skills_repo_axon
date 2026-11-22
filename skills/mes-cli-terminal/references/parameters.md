@@ -1,0 +1,511 @@
+# MES CLI Parameters Reference
+
+## Full command map (no domain omissions)
+
+- `mes auth`
+  - `login`, `status`, `logout`, `switch`, `profile delete`
+- `mes statistics`
+  - `add`, `update`, `delete`, `review`, `review-stats`, `related-hours`, `bonus`, `list`, `calendar`, `summary`
+- `mes sr`
+  - `create`
+  - `list|view|reply|recover|edit|download`
+- `mes plan`
+  - `list`, `view`, `end`
+- `mes knowledge`（别名：`article`、`kb`）
+  - `search`, `read`, `list`, `view`, `create`, `update`, `delete`, `assign-reviewer`, `set-level`, `set-type`, `review-count`
+- `mes contract`
+  - `list`, `list-items`, `view`
+- `mes customer`
+  - `attachment list`, `attachment upload`, `attachment download`, `attachment batch`
+- `mes dashboard`
+  - `base`
+  - `contract`
+  - `service`, `service unclose|rate|request|trend`
+  - `delivery`, `delivery summary`, `delivery contracts list`, `delivery contract-items`
+  - `work`, `work customers list`
+  - `score`, `score list`, `score prompt`
+  - `weeklyReport`, `weeklyReport list|view|create|update|delete`
+  - `city|team|level|skill|amount|age|task-table|task-treemap`
+- `mes util`
+  - `parse-support-url`
+  - `search-user`
+  - `search-company`
+- `mes oss`
+  - `upload image`
+
+## Full parameter reference (agent-facing)
+
+目标：让 agent 在不反复问用户的情况下尽量补齐参数。以下为按命令树整理的参数速查。
+
+### Global flags (all commands)
+
+- `-o, --output text|json`
+- `--jq <expr>`（仅 JSON 输出时使用）
+- `--template <go-template>`（仅 JSON 输出时使用）
+- `--interactive`（强制交互）
+
+### `mes auth`
+
+- `auth login`
+  - `--web`
+  - `--device`
+  - `--web-url <url>`
+  - `--with-token <token>`
+  - `--env prod|dev|local`
+  - `--host <api-base-url>`
+  - `--profile <name>`
+- `auth status`
+  - `--json`
+- `auth logout`
+  - `--profile <name>`
+- `auth switch`
+  - `--profile <name>`
+- `auth profile delete [names...]`
+  - 无专有 flags（不传 name 可交互）
+
+### `mes statistics`
+
+- `statistics add`
+  - `--type` **（必填，0=服务请求, 1=实施计划, 3=内部事项）**
+  - `--rid` **（必填，或用 --from-url）**
+  - `--start` **（必填，YYYY-MM-DD HH:mm:ss，不能跨天）**
+  - `--end` **（必填，YYYY-MM-DD HH:mm:ss，不能跨天）**
+  - `--hours` **（必填，最小0.5，最大24）**
+  - `--remark` **（必填，最少10字）**
+  - `--overtime-type`（`null|0=工作日加班 1=休息日加班 2=节假日加班`，默认 null 非加班）
+  - `--from-url`（自动解析 type 和 rid）
+  - `--title`
+  - `--company-id`
+  - `--executor-id`
+  - `--acc-id`
+  - `--list-title`
+  - `--dry-run`
+  - `--json`
+- `statistics update <id>`
+  - `--user-id`
+  - `--calendar-from`, `--calendar-to`
+  - `--patch-file`, `--patch-json`
+  - `--task-time` (min 0.5, max 24)
+  - `--remark`
+  - `--start`, `--end`
+  - `--title`
+  - `--executor-id`
+  - `--rid`
+  - `--acc-id`
+  - `--company-id`
+  - `--type`
+  - `--service-type`
+  - `--overtime-type`（`null|0=工作日加班 1=休息日加班 2=节假日加班`，默认 null 非加班）
+  - `--dry-run`
+  - `--json`
+- `statistics delete <id>`
+  - `--json`
+- `statistics review`
+  - `--ids`
+  - `--status approved|rejected`
+  - `--json`
+- `statistics review-stats`
+  - `--from`, `--to`, `--range`
+  - `--title`, `--remark`
+  - `--company-id`, `--team-id`
+  - `--acc-id`
+  - `--executor-id`
+  - `--service-type`
+  - `--missing-acc`, `--missing-impl`
+  - `--json`
+- `statistics related-hours <faultId>`
+  - `--json`
+- `statistics bonus`
+  - `--task-id`
+  - `--fault-id`
+  - `--amount`
+  - `--json`
+- `statistics list [title]`
+  - **位置参数**：`mes statistics list <关键词>` 等效于 `--title <关键词>`
+  - `--from`, `--to`, `--range`
+  - `--title`, `--remark` (均支持关键词模糊搜索)
+  - `--company-id`, `--team-id`
+  - `--acc-id`
+  - `--executor-id`, `--executor-name` (互斥)
+  - `--service-type`
+  - `--review-status`, `--sign-status`
+  - `--missing-acc`, `--missing-impl`
+  - `--page`, `--page-size`
+  - `--json`
+- `statistics calendar`
+  - `--from`, `--to`, `--range`
+  - `--user-id`, `--user-name` (互斥)
+  - `--company-id`
+  - `--json`
+- `statistics summary`
+  - `--from`, `--to`, `--range`
+  - `--user-id`, `--user-name` (互斥)
+  - `--team-id`
+  - `--work-city`
+  - `--group-type`
+  - `--json`
+
+### `mes sr`
+
+- `sr create`
+  - `--title` **（必填）**
+  - `--company-id` **（必填，合同/资产模式；plan 模式可由实施计划派生）**
+  - `--external-plan-id` **（必填：内部用户合同模式 / `--mode plan`；外部用户非必填）**
+  - `--acc-id` **（可选一致性校验；后端将其作为 `pickImplementationPlan` 的二级匹配键）**
+  - `--type` **（必填，P0-P5，默认P4=4）**
+  - `--body-md` / `--body-html` **（必填，推荐优先使用 --body-md）**
+  - `--body-html-file`
+  - `--attach-url`（可重复）
+  - `--mode contract|asset|plan`
+  - `--contract-id`（外部用户必填）
+  - `--asset-id`（`--mode asset` 时必填）
+  - `--recover-type`
+  - `--menu-id`
+  - `--team-id`
+  - `--executor-id`
+  - `--email`
+  - `--phone`
+  - `--json`
+
+> ⚠️ **后端契约变更**（`enmo_support 11127ba7`）：内部员工合同模式必须传 `--external-plan-id`，否则后端返回 `请选择实施计划`。CLI 在 `mes sr create` 进入 HTTP 之前就会 fail-fast，提示用户使用 `mes plan list --company-id <id>` 查实施计划。`--mode plan` 是新增绑定模式，公司ID / accId 可由实施计划派生。
+
+### `mes sr` 字典
+
+#### status 状态字典
+
+`--status` 参数用于筛选服务请求的状态，支持数字/中文名称：
+
+| 代码 | 状态描述   |
+| ---- | ---------- |
+| -1   | 初始化     |
+| 0    | 已提交     |
+| 1    | 处理中     |
+| 2    | 已关闭     |
+| 3    | 已归档     |
+| 4    | 待反馈     |
+| 5    | 业务已恢复 |
+
+#### type 等级字典
+
+`--type` / `--level` / `--min-level` 参数对应服务请求的 P0-P5 等级，code 与等级一一对应：
+
+| 代码 | 等级 | 描述                                       |
+| ---- | ---- | ------------------------------------------ |
+| 0    | P0   | 我方误操作致业务不可用                     |
+| 1    | P1   | 核心业务完全不可用（关键业务受影响）       |
+| 2    | P2   | 非核心业务完全不可用（非关键业务受到影响） |
+| 3    | P3   | 部分业务模块不可用（一般故障不影响业务）   |
+| 4    | P4   | 咨询，业务暂未受影响（技术咨询）           |
+| 5    | P5   | 问题原因分析                               |
+
+- `sr list [title]`
+  - **位置参数**：`mes sr list <关键词>` 等效于 `--title <关键词>`
+  - `--unclosed`
+  - `--is-starred`
+  - `--page`, `--page-size`
+  - `--id`
+  - `--level` (P0-P5)
+  - `--min-level` (P0-P5，客户端在当前页 payload 上做 level >= min-level 过滤)
+  - `--status`（建议中文；兼容数字：已提交|处理中|已关闭|已归档|待反馈|已恢复 = 0|1|2|3|4|5）
+  - `--company-id`
+  - `--person-id`, `--person-name` (互斥)
+  - `--menu-root-id`
+  - `--start-time`, `--end-time`
+  - `--title` (按标题关键词模糊搜索，支持部分匹配)
+  - `--tags`
+  - `--json`
+  - **列表 JSON 语义**：`executorEmployeeName` = 当前负责人**真实姓名**；`executorName` 多为账号/昵称。按负责人聚合、筛选、对外展示时**优先** `executorEmployeeName`，缺省再回退 `executorName`。
+- `sr view <id|url>`
+  - `--json`
+- `sr reply <id|url>`
+  - `--text`（纯文本回复，内容会被自动包裹在 `<p>` 标签中发送到后端的 `content` 字段）
+  - `--markdown`（Markdown 格式回复，内容原样发送到后端的 `contentMd` 字段，支持标题、列表、代码块等 Markdown 语法）
+  - `--file`（本地文件路径，随回复上传附件）
+  - `--internal`
+  - `--dry-run`
+  - `--json`
+  - **注意**：`--text` 和 `--markdown` 互斥，不能同时使用
+- `sr download <id|url>`
+  - `--file-id`（附件 id，从 `view` 输出中获取，如 6035）
+  - `--all`（下载全部附件，默认行为）
+  - `-O, --output-file`（保存路径；省略时自动用附件名）
+  - `--json`
+- `sr recover <id|url>`
+  - `--happen-time`
+  - `--recover-time`
+  - `--recover-type`
+  - `--dry-run`
+  - `--json`
+- `sr edit <id|url>`
+  - `--append`
+  - `--append-title`
+  - `--append-body`
+  - `--force`
+  - `--dry-run`
+  - `--json`
+
+### `mes plan`
+
+#### check-type 字典
+
+`--check-type` 参数用于指定实施计划的类型，支持数字 0-6：
+
+| 数字 | 中文类型 | 常见叫法/说明                    |
+| ---- | -------- | -------------------------------- |
+| 0    | 巡检     | 巡检、例行检查、定期检查         |
+| 1    | 培训     | 培训、授课、技术分享             |
+| 2    | 现场人天 | 现场人天、人天服务、按天计费     |
+| 3    | 驻场     | 驻场、驻场服务、长期驻场         |
+| 4    | 售前POC  | 售前POC、POC、售前验证、技术验证 |
+| 5    | 维保     | 维保、维保服务、维护保障         |
+| 6    | 内部事项 | 内部事项、内部事务、公司内部     |
+
+**自然语言映射规则：**
+
+当用户提到以下词汇时，映射到对应数字：
+
+- "巡检"、"例行检查" → 0
+- "培训"、"授课" → 1
+- "现场人天"、"人天" → 2
+- "驻场" → 3
+- "售前POC"、"POC"、"售前验证" → 4
+- "维保" → 5
+- "内部事项"、"内部事务" → 6
+
+#### status 状态字典
+
+`--status` 参数用于筛选实施计划的状态，支持数字 0-3：
+
+| 数字 | 状态描述     | 说明                         |
+| ---- | ------------ | ---------------------------- |
+| 0    | 未开始       | 计划尚未开始执行             |
+| 1    | 进行中       | 计划正在执行中               |
+| 2    | 结束         | 计划已经结束完成             |
+| 3    | 已逾期未结束 | 计划已超过结束日期但仍未结束 |
+
+**自然语言映射规则：**
+
+当用户提到以下词汇时，映射到对应数字：
+
+- "未开始" → 0
+- "进行中"、"执行中" → 1
+- "结束"、"已结束" → 2
+- "逾期"、"已逾期"、"超期" → 3
+
+#### 子命令参数
+
+- `plan list [title]`
+  - **位置参数**：`mes plan list <关键词>` 等效于 `--title <关键词>`
+  - `--page`, `--page-size`
+  - `--title` (按标题关键词模糊搜索，支持部分匹配)
+  - `--company-name`
+  - `--company-id`
+  - `--team-id`
+  - `--executor-id`, `--executor-name` (互斥)
+  - `--check-type`
+  - `--status`
+  - `--range`
+  - `--start-date`, `--end-date`
+  - `--contract-id`
+  - `--acc-id`
+  - `--missing-acc`, `--missing-impl`
+  - `--json`
+- `plan view <id>`
+  - `--json`
+- `plan end <id>`
+  - `--score`
+  - `--feedback`
+  - `--json`
+
+### `mes knowledge`
+
+> 别名：`mes article`、`mes kb` 等价于 `mes knowledge`。
+> **职责区分**：`knowledge list` 是管理态列表（只列出当前账号有权限管理的文章），`knowledge search` 是全库全文检索（ES）。两者互不等价，不要互相替代。
+
+- `knowledge search <query>`
+  - **位置参数**：`mes knowledge search <query>` 为必填的检索关键词
+  - ⚠️ **检索需要登录**：未登录时命令直接返回「未登录，请先执行 `mes auth login`」，不发起任何请求（MES 与社区都不请求）
+  - `--source all|mes|modb`（默认 `all`）：检索来源，`mes` = MES 内部知识库，`modb` = 墨天轮社区
+    - `all` 的结果分两块返回（`mesItems` / `modbItems`），**不跨源排名**（两个源的相关度分值不可比）；文本输出是两个分区，各一张表，分区标题同时给出后端命中总数与本次返回条数（如 `MES 内部知识库（命中 451 条，返回 3 条）`）
+    - 某个源不可用时，该分区输出 `MES 内部知识库：不可用（原因）`，stderr 另有 `提示:`，JSON 里是 `sources[].ok=false`；不要把「源不可用」误读成「没有命中」
+    - MES 命中带控制台文章页链接 `mesItems[].url`（`<站点根>/article/search/{id}`），社区命中带文章页链接 `modbItems[].url`（`https://www.modb.pro/db/{id}`）
+  - `--limit`（默认 10）：每个来源的返回条数，必须 > 0；后端返回更多记录时由客户端截断
+  - `--page`（默认 1）：页码，必须 > 0
+  - `--sort relevance|time`（默认 `relevance`）：按相关度或按更新时间排序（时间排序按解析后的时间，两个源各自排序）
+  - `--time week|month|year|all`（默认 `all`）：时间范围过滤
+  - `--tag`：按标签过滤
+  - `--platform`：按平台过滤
+  - `--version`：按版本过滤
+  - `--json`
+- `knowledge read <id>`
+  - **位置参数**：文章 ID（整数）
+  - `--source mes|modb`（默认 `mes`）：`mes` 读 MES 内部知识库正文；`modb` 社区无公开正文接口，只返回文章页链接（`https://www.modb.pro/db/{id}`），不发请求
+  - ⚠️ 社区链接要用浏览器 User-Agent 打开（curl 默认 UA 会被 403）；HTTP 200 不代表文章存在，页面标题为「404 - 墨天轮」即文章不存在
+  - ⚠️ **只把 MES 命中的 ID 传给 read**：MES 内部 ID 与社区 ID 区间重叠，混用会静默读到另一篇无关文档；社区命中请直接打开结果里的 URL
+  - `--raw`：输出原始 HTML 正文而非 Markdown
+  - `--json`
+- `knowledge list [search]`
+  - **位置参数**：`mes knowledge list <关键词>` 等效于 `--search <关键词>`
+  - `--mode manage|audit|my`
+  - `--page`, `--page-size`
+  - `--status`
+  - `--created-by`, `--created-by-name` (互斥)
+  - `--menu-id`
+  - `--team-id`
+  - `--search`
+  - `--start-time`, `--end-time`
+  - `--json`
+- `knowledge view <id>`
+  - `--json`
+- `knowledge create`
+  - `--title` **（必填）**
+  - `--content-md` **（必填，与 --content 二选一）**
+  - `--tags` **（必填，逗号分隔）**
+  - `--menu-id`（默认 505）
+  - `--status`（默认 1=已发布）
+  - `--difficult-level`（默认 0）
+  - `--content`（与 --content-md 二选一）
+  - `--content-md-file`（从文件读取 content-md，与 --content-md 二选一）
+  - `--body-file`
+  - `--type`（0=知识库文章, 1=最新咨询, 2=安全警告, 3=其他, 4=版本发布, 5=最佳实践, 6=产品公告, 7=服务报告）
+  - `--encrypt-level`
+  - `--source`
+  - `--version`
+  - `--platform`
+  - `--brief`
+  - `--evaluate`
+  - `--sr-id`（传入时自动设置 type=7, encrypt-level=INTERNAL, menu-id=505）
+  - `--json`
+- `knowledge update`
+  - `--id` **（必填，必须 > 0）**
+  - `--title`
+  - `--content-md`
+  - `--tags`
+  - `--menu-id`
+  - `--status`
+  - `--difficult-level`
+  - `--content`
+  - `--content-md-file`
+  - `--body-file`
+  - `--type`
+  - `--encrypt-level`
+  - `--source`
+  - `--version`
+  - `--platform`
+  - `--brief`
+  - `--evaluate`
+  - `--sr-id`（传入时自动设置 type=7, encrypt-level=INTERNAL, menu-id=505）
+  - `--json`
+- `knowledge delete <id>`
+  - `--json`
+- `knowledge assign-reviewer`
+  - `--id`
+  - `--reviewer-id`
+  - `--json`
+- `knowledge set-level`
+  - `--id`
+  - `--level`
+  - `--json`
+- `knowledge set-type`
+  - `--id`
+  - `--type`
+  - `--json`
+- `knowledge review-count`
+  - `--unclosed`
+  - `--json`
+
+### `mes contract`
+
+- `contract list [search]`
+  - **位置参数**：`mes contract list <关键词>` 等效于 `--search <关键词>`
+  - `--page`, `--page-size`
+  - `--search`（合同名称/合同编号，模糊匹配，不区分大小写）
+  - `--owner-id`
+  - `--type`
+  - `--period-type`（默认 `0`，仅查询服务中/有效期内的合同；传空值可查询全部合同）
+  - `--manager-id`, `--manager-name` (互斥)
+  - `--team-id`
+  - `--start-time`, `--end-time`
+  - `--json`
+- `contract view <id>`
+  - `--json`
+- `contract list-items`
+  - `--company-id` (optional)
+  - `--contract-id` (optional)
+  - `--contract-num` (optional) - Exact match searching by contract number
+  - `--item-type` - Filter by itemType, e.g. 一般维保
+  - `--date-range-start`, `--date-range-end` - both item start and end must be in range
+  - `--min-progress-ratio`, `--max-progress-ratio` - Filter by actualHours/planHour
+  - `--actual-hours-zero-only` - Only items with actualHours == 0
+  - `--unlimited-end-time` / `--include-expired` - Include items from contracts that have already ended (forwards `unlimitedEndTime=true`; default still filters by `end_time >= today`)
+  - `--page`, `--page-size`, `--all` - Pagination
+  - `--json`
+
+### `mes dashboard`
+
+- 说明：`dashboard` 子命令多且参数较细，agent 需按以下高频参数优先补齐。
+- 高频公共参数：
+  - `--json`
+  - 日期：`--from --to --range`
+  - 人员：`--executor-id`
+  - 分页：`--page --page-size`
+- 重点子命令参数：
+  - `dashboard delivery` / `delivery summary`：`--executor-id`
+  - `dashboard delivery contracts list`：`--executor-id --expiring-only --last-service-date --never-delivered-only --date-range-start --date-range-end --include-expired --json`
+  - `dashboard work`：`--executor-id --from/--to or --range --json`
+  - `dashboard score` / `score list`：**报工质量评分入口**（非审批统计）。用于查询工程师/团队在某月的报工质量评分列表（包含得分、评级等）。与 `statistics review-stats`（审批通过/拒绝统计）完全不同：
+    - **报工质量/评分** → `mes dashboard score list`
+    - **审批工时统计** → `mes statistics review-stats`
+    - 参数：`--month --team-id --executor-id --page --page-size --sort --truncate --no-truncate --limit --json`
+  - `dashboard score prompt`：查看评分规则/提示词
+  - `dashboard weeklyReport [list] [search]`：**位置参数**映射到 `--search`（`mes dashboard weeklyReport list <关键词>`）；`--search --created-by --creator --type --period-from --period-to --page --page-size --json`
+  - `dashboard weeklyReport view <id>`：`--json`
+  - `dashboard weeklyReport create`：`--type --period-from --period-to --md|--md-file|--html --json`
+  - `dashboard weeklyReport update <id>`：`--type --period-from --period-to --md|--md-file|--html --json`
+  - `dashboard weeklyReport delete <id>`：`--json`
+  - `dashboard task-table`：`--from --to --range --json`
+  - `dashboard task-treemap`：`--from --to --range --no-acc --service-type --service-account-id --acc-id --executor-id --json`
+
+### `mes util`
+
+- `util parse-support-url <url>`
+  - 仅使用全局输出参数（`-o json` 推荐）
+- `util search-user <keyword>`
+  - 通过用户名/关键字搜索用户，返回 userID、userName、account，支持 `-o json` 输出
+- `util search-company <keyword>`
+  - 通过公司名称关键字搜索公司，返回 companyID、companyName，支持 `-o json` 输出
+
+### `mes customer attachment`
+
+> ⚠️ 所有子命令都要求显式传入 `--company-id`（不接受 `--company-id 0`）；CLI 不会从 `/user/detail` 推断。必须先用 `util search-company` 查到 ID 再调用。
+
+- `attachment list --company-id <id>`
+  - 列出客户维度的附件。`--all` 取所有页（默认 `--page-size 50`），否则按 `page-num/page-size` 取单页。
+  - 参数：`--company-id --page-num --page-size --all --json`
+- `attachment upload --company-id <id> --file <path>`
+  - 上传本地文件到客户范围 OSS，自动完成 OSS presign → PUT → `/enclosure/save` 三步。
+  - 参数：`--company-id --file --json`
+- `attachment download --company-id <id> [--file-id <id> | --all]`
+  - 下载单个附件或全部附件。省略 `--file-id` 且未指定 `--all` 时默认走 `--all`。同名标题自动附加 `_<id>` 后缀避免覆盖。
+  - 参数：`--company-id --file-id --all --output-dir (-O) --page-size --json`
+- `attachment batch --company-id <id> --zip-output <path>`
+  - 把所有附件打包成单个 zip；0 条成功时删除空 zip 并以非零退出。
+  - 参数：`--company-id --page-size --zip-output --json`
+
+### `mes oss`
+
+- `oss upload image <file-path>`
+  - `<file-path>` (Argument, Required): 磁盘上的本地图片文件路径
+  - `-o json`: 显示完整元数据（location, name, size, ext）
+  - **⚠️ 注意**：目前**仅支持图片**。不支持上传附件、文档或压缩包。上传非图片文件可能导致后端报错或处理异常。
+
+### Parameter completion rules for agent
+
+- 创建服务请求（`sr create`）时，优先选择 `--body-md` 传入 Markdown 格式的正文，而非 `--body-html`。使用 Markdown 可以更好地处理代码块、列表和格式化内容。
+- `sr list` 的 JSON：统计「负责人」用 `executorEmployeeName`（真实姓名），不要用 `executorName` 代替；后者可为登录名。
+- 用户给 URL（plan/request）时，优先 `--from-url`，避免手工错填 `type/rid`。
+- `statistics add` 若无交互必须带齐：`--start --end --hours --remark` + 关联参数。
+- 周报 create/update 正文三选一：`--md` / `--md-file` / `--html`（避免同时给）。
+- `customer attachment` 子命令必须显式传入 `--company-id`；不要尝试从 `/user/detail` 推断或省略该 flag。
+- `customer attachment upload` 自动完成 OSS + `/enclosure/save` 三步；上传后无需手工注册。
+- `customer attachment download --all` / `batch` 在 0 条成功时退出码非零；解析 `--json` 输出的 `errors[]` 字段查看失败行。
