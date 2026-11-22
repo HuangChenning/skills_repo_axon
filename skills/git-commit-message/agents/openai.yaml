@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Commit Message"
+  short_description: "Generate structured commit messages from staged changes following conventional commit format"
+  default_prompt: "Generate a git commit message for the current staged changes"

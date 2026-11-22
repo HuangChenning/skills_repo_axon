@@ -1,0 +1,23 @@
+{
+  "skill_name": "low-hour-report",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "查一下 Q2 哪些实施计划零报工或报工不足 20 小时",
+      "expected_output": "输出报工排查报告，包含零报工和极低报工的计划明细表格，数据来源于 statistics 实际报工记录而非 plan executorList",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "帮我看看最近3个月，有没有人报了工但不足10小时的计划",
+      "expected_output": "时间范围自动解析为最近3个月，阈值使用用户指定的10h，输出极低报工清单",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "排查一下4月1日到6月30日之间的报工合规情况，重点看哪些计划完全没人报工",
+      "expected_output": "时间范围精确为2026-04-01~2026-06-30，重点展示零报工计划，使用statistics实际报工数据",
+      "files": []
+    }
+  ]
+}

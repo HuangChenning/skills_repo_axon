@@ -1,0 +1,5 @@
+interface:
+  display_name: "零报工/低报工排查"
+  short_description: "基于statistics实际报工，查谁没报工、报工不足20小时、极低报工、工时合规、漏报排查"
+policy:
+  allow_implicit_invocation: true

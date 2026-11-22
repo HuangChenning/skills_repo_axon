@@ -1,0 +1,39 @@
+{
+  "skill": "gemini-code-assist-check",
+  "invokedAt": null,
+  "workspaceDir": null,
+  "targetPath": null,
+  "steps": [
+    {
+      "step": "scope",
+      "description": "Determine audit scope",
+      "status": "pending",
+      "fileCount": null,
+      "lineCount": null
+    },
+    {
+      "step": "critical",
+      "description": "Run critical-level checks",
+      "status": "pending",
+      "issuesFound": null
+    },
+    {
+      "step": "high",
+      "description": "Run high-level checks",
+      "status": "pending",
+      "issuesFound": null
+    },
+    {
+      "step": "medium",
+      "description": "Run medium-level checks",
+      "status": "pending",
+      "issuesFound": null
+    },
+    {
+      "step": "report",
+      "description": "Generate audit report",
+      "status": "pending",
+      "reportFile": null
+    }
+  ]
+}

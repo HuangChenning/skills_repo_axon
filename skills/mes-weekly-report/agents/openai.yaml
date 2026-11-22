@@ -1,0 +1,5 @@
+interface:
+  display_name: MES 管理层周报
+  short_description: 查看指定人员 MES 管理层周报，支持 Markdown/HTML 输出（含提交统计、风险汇总、折叠详情）。触发：周报汇总、总监周报、区总周报。
+policy:
+  allow_implicit_invocation: false
